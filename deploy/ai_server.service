@@ -1,0 +1,22 @@
+[Unit]
+Description=AI Parrophins Server (Universal Compressor & MeloTTS Voice Server)
+After=network.target
+
+[Service]
+Type=simple
+User=backend-ai
+WorkingDirectory=/home/backend-ai/htdocs/ai.parrophins.in
+Environment=PYTHONUTF8=1
+Environment=MELO_SPEAKER=EN_INDIA
+Environment=MELO_THREADS=2
+# OPTIONAL: Set a secret API key if you want to require X-API-Key header
+# Environment=MELO_API_KEY=your-secret-api-key
+
+# Executable command: adjust port if behind Nginx/Caddy reverse proxy
+ExecStart=/home/backend-ai/htdocs/ai.parrophins.in/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8090 --workers 1
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

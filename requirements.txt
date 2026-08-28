@@ -1,0 +1,28 @@
+# Universal Compressor & MeloTTS Server Requirements
+# Python Version: 3.12.3
+
+# --- 1. FastAPI Web Server ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+pydantic>=2.0.0
+
+# --- 2. Image & Document Compression (/compress_same) ---
+Pillow>=10.0.0
+pillow-heif>=0.15.0
+PyMuPDF>=1.23.0
+pikepdf>=8.0.0
+
+# --- 3. Audio & MeloTTS Engine (/tts) ---
+soundfile>=0.12.1
+numpy>=1.26.0
+nltk>=3.8.1
+unidic-lite>=1.0.8
+mecab-python3>=1.0.8
+setuptools<81
+
+# Note for PyTorch & MeloTTS:
+# 1. Install CPU-only PyTorch first (avoids gigabytes of CUDA):
+#    pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+# 2. Install MeloTTS repository:
+#    pip install git+https://github.com/myshell-ai/MeloTTS.git
