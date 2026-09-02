@@ -1,28 +1,176 @@
-# Universal Compressor & MeloTTS Server Requirements
-# Python Version: 3.12.3
+# =============================================================================
+# PhinsIQ - Backend Dependencies (pinned versions for reproducible installs)
+# =============================================================================
+#
+# PHILOSOPHY: Every package must earn its place.
+# See docs/04-package-guide.md for detailed explanations of each package.
+#
+# HOW TO INSTALL:
+#   source venv/bin/activate
+#   pip install -r requirements.txt
+# =============================================================================
 
-# --- 1. FastAPI Web Server ---
-fastapi>=0.110.0
-uvicorn[standard]>=0.28.0
-python-multipart>=0.0.9
-pydantic>=2.0.0
 
-# --- 2. Image & Document Compression (/compress_same) ---
-Pillow>=10.0.0
-pillow-heif>=0.15.0
-PyMuPDF>=1.23.0
-pikepdf>=8.0.0
+# --- Web Framework -----------------------------------------------------------
 
-# --- 3. Audio & MeloTTS Engine (/tts) ---
+fastapi==0.141.1
+# High-performance async Python web framework.
+# Handles routing, request validation, serialization, and auto-generates API docs.
+# Why FastAPI over Flask: Async-first, automatic Pydantic validation, 3x faster.
+
+uvicorn[standard]==0.52.4
+# ASGI server that runs FastAPI. Think of FastAPI as the blueprint and
+# uvicorn as the builder that executes it.
+# [standard] adds: uvloop (faster event loop), httptools (faster HTTP parsing),
+# websockets support, and file-watching for auto-reload in development.
+
+starlette==1.6.0
+# Low-level ASGI toolkit that FastAPI is built on.
+# We never use Starlette directly — FastAPI extends it.
+# Listed explicitly to pin the version.
+
+
+# --- Data Validation ---------------------------------------------------------
+
+pydantic==2.13.4
+# Data validation using Python type hints. Pydantic v2 is written in Rust,
+# making it ~50x faster than v1. Validates every request before our code runs.
+
+pydantic-settings==2.15.0
+# Extension for loading and validating application settings from .env files
+# and environment variables. Implements "no hardcoded secrets" principle.
+
+pydantic-core==2.46.4
+# The Rust core that powers Pydantic v2. Listed explicitly to avoid
+# compilation issues on non-standard Python versions.
+
+
+# --- Database ----------------------------------------------------------------
+
+motor==3.7.1
+# Async MongoDB driver for Python. The name "motor" = "async pymongo".
+# We use this to query MongoDB without blocking the event loop while waiting.
+
+pymongo==4.17.0
+# Synchronous MongoDB driver that Motor builds on top of.
+# Never used directly in application code.
+
+
+# --- HTTP Client (ERP API calls) ---------------------------------------------
+
+httpx==0.28.1
+# Async HTTP client for calling external ERP APIs.
+# When a student asks a question, PhinsIQ calls the institution's ERP API
+# using httpx — asynchronously, so other requests aren't blocked.
+
+httpcore==1.0.9
+# Low-level HTTP implementation that httpx uses. Never used directly.
+h11==0.16.0
+# HTTP/1.1 state machine used by httpcore. Never used directly.
+
+
+# --- Configuration -----------------------------------------------------------
+
+python-dotenv==1.2.3
+# Loads .env file variables into the process environment at startup.
+# Used by pydantic-settings under the hood for development .env support.
+
+
+# --- Logging -----------------------------------------------------------------
+
+structlog==26.1.0
+# Structured logging: produces machine-readable JSON logs in production
+# and readable colored logs in development.
+# Example: {"event": "erp_timeout", "institution_id": "sags_school", "module": "attendance"}
+
+
+# --- Security ----------------------------------------------------------------
+
+python-jose==3.5.0
+# JWT (JSON Web Token) creation and verification.
+# JWTs allow stateless authentication: the token itself contains user info
+# so we don't hit the database on every request.
+
+cryptography==50.0.1
+# Cryptographic primitives used by python-jose for token signing.
+
+passlib==1.7.4
+# Password hashing with bcrypt for any PhinsIQ-managed users.
+
+bcrypt==5.0.0
+# The bcrypt algorithm — deliberately slow to resist brute-force attacks.
+
+
+# --- Rate Limiting -----------------------------------------------------------
+
+slowapi==0.1.10
+# Rate limiting middleware for FastAPI.
+# Prevents abuse: e.g., max 30 chat requests/minute per user.
+
+
+# --- NLP & Semantic Matching -------------------------------------------------
+
+rapidfuzz==3.12.2
+# High-performance fuzzy matching and token similarity engine (C++ core).
+# Used for instant intent matching on user questions without hitting Claude.
+
+
+# --- Async Support -----------------------------------------------------------
+
+anyio==4.14.2
+# Async compatibility layer used by FastAPI and httpx.
+
+
+# --- Testing -----------------------------------------------------------------
+
+pytest==9.1.1
+# Standard Python testing framework. Auto-discovers test functions
+# and provides rich assertion failure messages.
+
+pytest-asyncio==1.4.0
+# Allows pytest to run async test functions (required for testing async FastAPI routes).
+
+
+# --- Mathematical & Scientific Engine ----------------------------------------
+
+sympy==1.13.3
+# Symbolic mathematics library for Python.
+# Primary computational engine for exact algebra, calculus, equations, and geometry.
+
+mpmath==1.3.0
+# Arbitrary-precision floating-point arithmetic library used by SymPy.
+
+pint==0.24.4
+# Physical quantities and unit conversion library for math and science engines.
+
+numpy==2.2.3
+# Fundamental package for array computation and matrix operations.
+
+
+# --- Web Scraping & Knowledge Ingestion --------------------------------------
+
+beautifulsoup4==4.15.0
+# HTML parser and boilerplate stripper for institution website crawler.
+
+soupsieve==2.9.2
+# CSS selector library used by BeautifulSoup.
+
+playwright==1.62.0
+# Headless Chromium browser automation for dynamic client-side SPA rendering (React/Vite/Next).
+
+
+# --- Text-to-Speech Engine (MeloTTS) -----------------------------------------
+# Optional offline voice synthesis engine for PhinsIQ mascot and batch TTS.
+# Install CPU-only PyTorch first:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Then install MeloTTS and soundfile:
+#   pip install melotts soundfile
+
 soundfile>=0.12.1
-numpy>=1.26.0
-nltk>=3.8.1
-unidic-lite>=1.0.8
-mecab-python3>=1.0.8
-setuptools<81
+# Audio file read/write library for 16-bit PCM WAV generation.
 
-# Note for PyTorch & MeloTTS:
-# 1. Install CPU-only PyTorch first (avoids gigabytes of CUDA):
-#    pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-# 2. Install MeloTTS repository:
-#    pip install git+https://github.com/myshell-ai/MeloTTS.git
+melotts>=0.1.2
+# High-speed offline speech synthesis model (MIT licensed, CPU-only).
+
+
+

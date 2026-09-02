@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhinsIQ — Technical Architecture & Code-Wise Learning Guide</title>
+  <meta name="description" content="Comprehensive code-wise technical architecture and execution flow guide for PhinsIQ AI ERP Middleware." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =========================================================================
+       Design System Tokens
+       ========================================================================= */
+    :root {
+      --bg-primary:      #0a0e1a;
+      --bg-secondary:    #111827;
+      --bg-card:         #161d2e;
+      --bg-input:        #1e2740;
+      --bg-hover:        #1f293d;
+      --bg-glass:        rgba(17, 24, 39, 0.9);
+
+      --accent:          #6366f1;
+      --accent-light:    #818cf8;
+      --accent-glow:     rgba(99, 102, 241, 0.28);
+      --accent-dark:     #4f46e5;
+
+      --emerald:         #10b981;
+      --emerald-glow:    rgba(16, 185, 129, 0.22);
+      --warning:         #f59e0b;
+      --error:           #ef4444;
+      --info:            #3b82f6;
+
+      --text-primary:    #f8fafc;
+      --text-secondary:  #94a3b8;
+      --text-muted:      #64748b;
+
+      --border:          rgba(99, 102, 241, 0.16);
+      --border-hover:    rgba(99, 102, 241, 0.45);
+      --divider:         rgba(255, 255, 255, 0.07);
+
+      --radius-sm:       6px;
+      --radius:          12px;
+      --radius-lg:       18px;
+
+      --shadow-card:     0 8px 32px rgba(0, 0, 0, 0.38);
+      --transition:      all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 15% 15%, rgba(99,102,241,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 85% 85%, rgba(16,185,129,0.05) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--divider);
+      backdrop-filter: blur(20px);
+      background: var(--bg-glass);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1400px;
+      margin: 0 auto;
+      gap: 16px;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--emerald));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Main Container & Sidebar Grid */
+    .guide-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 28px 80px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 36px;
+      position: relative;
+    }
+
+    @media (max-width: 1024px) {
+      .guide-container {
+        grid-template-columns: 1fr;
+        padding: 20px 16px 60px;
+      }
+      .toc-sidebar { display: none; }
+    }
+
+    /* Sticky Table of Contents Sidebar */
+    .toc-sidebar {
+      position: sticky;
+      top: 90px;
+      height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: 12px;
+    }
+
+    .toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .toc-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toc-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toc-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      transform: translateX(3px);
+    }
+
+    /* Content Styling */
+    .content-area {
+      min-width: 0;
+    }
+
+    .guide-hero {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.06) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      margin-bottom: 36px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .guide-hero h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .guide-hero p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 820px;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 36px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .section-card h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--accent-light);
+      margin: 24px 0 10px;
+    }
+
+    .section-card p, .section-card li {
+      font-size: 14.5px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .section-card ul, .section-card ol {
+      padding-left: 20px;
+      margin-bottom: 16px;
+    }
+
+    .section-card li {
+      margin-bottom: 8px;
+    }
+
+    /* Code Blocks */
+    pre, code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    pre {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      font-size: 13px;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 16px 0 20px;
+      line-height: 1.6;
+    }
+
+    p code, li code, td code {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    /* Tables */
+    .guide-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 16px 0 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .guide-table th {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 12px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .guide-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--divider);
+      font-size: 13.5px;
+      color: var(--text-primary);
+      vertical-align: top;
+    }
+
+    .guide-table tr:last-child td { border-bottom: none; }
+    .guide-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Flow Step Card */
+    .step-box {
+      border-left: 3px solid var(--accent);
+      background: var(--bg-secondary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+
+    .step-box:hover {
+      border-left-color: var(--emerald);
+      transform: translateX(4px);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .step-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-file {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--accent-light);
+      background: rgba(99, 102, 241, 0.12);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* Chips */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .chip.emerald { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--emerald); }
+    .chip.indigo  { background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--accent-light); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-hover);
+    }
+
+    footer {
+      border-top: 1px solid var(--divider);
+      padding: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-wrapper">
+
+    <!-- Header -->
+    <header>
+      <div class="header-inner">
+        <a href="index.html" class="brand-area">
+          <div class="brand-icon">📖</div>
+          <div>
+            <div class="brand-title">PhinsIQ Code & Architecture Guide</div>
+            <div style="font-size:11px; color:var(--text-muted);">Technical Developer & Engineering Manual</div>
+          </div>
+        </a>
+
+        <div class="header-nav-actions">
+          <a href="index.html" class="btn btn-primary">⚡ Open Studio Console</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="guide-container">
+
+      <!-- Table of Contents Sidebar -->
+      <aside class="toc-sidebar">
+        <div class="toc-title">Table of Contents</div>
+        <nav class="toc-nav">
+          <a href="#packages" class="toc-link"><span>📦</span> Packages & Rationale</a>
+          <a href="#startup" class="toc-link"><span>🚀</span> Startup Lifecycle & Order</a>
+          <a href="#pipeline" class="toc-link"><span>🔄</span> 9-Stage Request Flow</a>
+          <a href="#dynamic-mapping" class="toc-link"><span>🗺️</span> How Dynamic Mapping Works</a>
+          <a href="#file-breakdown" class="toc-link"><span>📂</span> Codebase & Directory Map</a>
+          <a href="#onboarding" class="toc-link"><span>🛠️</span> Onboard New Client (0 Code)</a>
+        </nav>
+      </aside>
+
+      <!-- Content Area -->
+      <main class="content-area">
+
+        <!-- Hero Card -->
+        <div class="guide-hero">
+          <h1>Technical Engineering & Code Guide</h1>
+          <p>
+            An in-depth, code-level explanation of how PhinsIQ is structured, which packages are used and why, which files run first during startup, and how every function in the pipeline analyzes, routes, and renders natural language answers.
+          </p>
+        </div>
+
+        <!-- ==================================================================
+             SECTION 1: PACKAGES & WHY USED
+             ================================================================== -->
+        <section id="packages" class="section-card">
+          <h2><span>📦</span> 1. Core Packages & Technical Rationale</h2>
+          <p>
+            PhinsIQ is designed to support 150+ institutions simultaneously with high concurrency and sub-millisecond middleware latency. Here is why each specific package is used:
+          </p>
+
+          <table class="guide-table">
+            <thead>
+              <tr>
+                <th>Package</th>
+                <th>Category</th>
+                <th>Why It Is Used & Technical Advantage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>fastapi</code></td>
+                <td><span class="chip indigo">ASGI Framework</span></td>
+                <td>High-performance async web framework built on Starlette and Pydantic. Enables non-blocking async routes and automatic OpenAPI documentation.</td>
+              </tr>
+              <tr>
+                <td><code>motor</code></td>
+                <td><span class="chip emerald">Async Database</span></td>
+                <td>Official non-blocking async MongoDB driver built on <code>asyncio</code>. Prevents database network I/O from blocking Python's event loop when querying configs for 150+ schools.</td>
+              </tr>
+              <tr>
+                <td><code>pydantic v2</code></td>
+                <td><span class="chip indigo">Data Validation</span></td>
+                <td>High-speed Rust-powered data parsing and schema validation for API request bodies and database models with strict type safety.</td>
+              </tr>
+              <tr>
+                <td><code>httpx</code></td>
+                <td><span class="chip emerald">Async HTTP Client</span></td>
+                <td>Next-generation async HTTP client with built-in connection pooling and timeouts for executing ERP REST API calls concurrently.</td>
+              </tr>
+              <tr>
+                <td><code>structlog</code></td>
+                <td><span class="chip indigo">Observability</span></td>
+                <td>Structured key-value JSON logging. Enables log correlation with <code>request_id</code> across all 9 pipeline stages for production debugging.</td>
+              </tr>
+              <tr>
+                <td><code>certifi</code></td>
+                <td><span class="chip indigo">Security & TLS</span></td>
+                <td>Provides Mozilla's carefully curated collection of Root Certificates for secure, verified SSL/TLS connections to MongoDB Atlas and ERP endpoints.</td>
+              </tr>
+              <tr>
+                <td><code>uvicorn</code></td>
+                <td><span class="chip emerald">ASGI Server</span></td>
+                <td>Lightning-fast ASGI server implementation using <code>uvloop</code> and <code>httptools</code> to serve FastAPI in production.</td>
+              </tr>
+              <tr>
+                <td><code>pytest</code> & <code>pytest-asyncio</code></td>
+                <td><span class="chip indigo">Testing</span></td>
+                <td>Automated asynchronous testing harness ensuring all CRUD routes, permission checks, and pipeline mapping functions execute correctly.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ==================================================================
+             SECTION 2: STARTUP LIFECYCLE
+             ================================================================== -->
+        <section id="startup" class="section-card">
+          <h2><span>🚀</span> 2. Startup Lifecycle — Which File Runs First?</h2>
+          <p>
+            When you run <code>uvicorn app.main:app --reload</code>, here is the exact chronological sequence of files and functions that execute:
+          </p>
+
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Step 1: Application Entrypoint & Logging Config</div>
+              <div class="step-file">app/main.py & app/core/logging.py</div>
+            </div>
+            <p>
+              Uvicorn loads <code>app/main.py</code>. The very first statement executed is <code>configure_logging()</code> from <code>app/core/logging.py</code>. This ensures that every startup event (including server banner and DB connection logs) is formatted as structured JSON logs.
+            </p>
+          </div>
+
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Step 2: Environment Settings Initialized</div>
+              <div class="step-file">app/core/config.py</div>
+            </div>
+            <p>
+              <code>Settings()</code> initializes by reading the <code>.env</code> file (MongoDB URL, Database name, Port, Environment). Settings are cached as a singleton for the entire application.
+            </p>
+          </div>
+
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Step 3: Application Factory Created</div>
+              <div class="step-file">app/main.py: create_application()</div>
+            </div>
+            <p>
+              <code>create_application()</code> instantiates FastAPI, registers CORS middleware (allowing cross-origin requests from the web console), mounts custom exception handlers for <code>PhinsIQException</code>, and links the async lifespan context manager.
+            </p>
+          </div>
+
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Step 4: Database Lifespan & Connection Pool Startup</div>
+              <div class="step-file">app/core/database.py: lifespan()</div>
+            </div>
+            <p>
+              During startup, FastAPI enters the <code>lifespan</code> generator. It calls <code>connect_to_mongodb()</code>, creating a single persistent <code>AsyncIOMotorClient</code> connection pool with TLS certificates from <code>certifi.where()</code> and tests the connection with an admin <code>ping</code>.
+            </p>
+          </div>
+
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Step 5: API Routers Mounted & Traffic Served</div>
+              <div class="step-file">app/api/v1/router.py</div>
+            </div>
+            <p>
+              FastAPI mounts <code>v1_router</code> with prefix <code>/api/v1</code>:
+              <br/>• <code>/api/v1/health</code> (Health check)
+              <br/>• <code>/api/v1/phinsiq/chat</code> (Core natural language pipeline)
+              <br/>• <code>/api/v1/admin/...</code> (CRUD studio for institutions, modules, mappings, fields, templates)
+            </p>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             SECTION 3: 9-STAGE REQUEST PIPELINE
+             ================================================================== -->
+        <section id="pipeline" class="section-card">
+          <h2><span>🔄</span> 3. Deep-Dive: The 9-Stage Request Pipeline</h2>
+          <p>
+            When a student asks: <strong>"What is my pending fee?"</strong>, here is how each file and function processes the request step-by-step:
+          </p>
+
+          <!-- Stage 1 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 1: API Request Ingestion & Validation</div>
+              <div class="step-file">app/api/v1/chat.py: chat_endpoint()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>async def chat(request: ChatRequest)</code><br/>
+              <strong>Input:</strong> <code>{"institution_id": "sjbhs", "role": "student", "user_id": "ST123", "message": "What is my pending fee?"}</code><br/>
+              <strong>How it works:</strong> Pydantic automatically validates the JSON payload. A unique <code>request_id</code> is generated for distributed log tracing, and <code>pipeline.process(request, request_id)</code> is called.
+            </p>
+          </div>
+
+          <!-- Stage 2 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 2: Text Pre-Processing & Normalization</div>
+              <div class="step-file">app/pipeline/preprocessor.py: Preprocessor.process()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>def process(self, raw_message: str) -> PreprocessedMessage</code><br/>
+              <strong>Inner Logic:</strong> Strips whitespace, converts text to lowercase, removes punctuation, and checks for greetings (e.g. "hi", "hello") or profanity. If a simple greeting is detected, it short-circuits and returns an immediate response without database/ERP overhead.
+            </p>
+          </div>
+
+          <!-- Stage 3 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 3: Module Keyword Detection</div>
+              <div class="step-file">app/understanding/module_detector.py: ModuleDetector.detect()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>def detect(self, message: str) -> ModuleDetectionResult</code><br/>
+              <strong>Inner Logic:</strong> Analyzes weighted keyword signals. For example, "pending" (1.5) and "fee" (2.0) score highest for the <code>fees</code> module (confidence score: 1.0). Identifies target module: <code>"fees"</code>.
+            </p>
+          </div>
+
+          <!-- Stage 4 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 4: Role Permission Authorization</div>
+              <div class="step-file">app/permissions/permission_engine.py: PermissionEngine.check()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>async def check(self, role_id: str, module_id: str) -> bool</code><br/>
+              <strong>Inner Logic:</strong> Queries the <code>roles</code> collection in MongoDB (cached in-memory) to verify if <code>student</code> is permitted to access the <code>fees</code> module. If unauthorized (e.g., student querying payroll), raises <code>ForbiddenError</code>.
+            </p>
+          </div>
+
+          <!-- Stage 5 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 5: Field Intent Detection & NLP Aliases</div>
+              <div class="step-file">app/understanding/field_detector.py: FieldDetector.detect()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>def detect(self, message: str, field_definitions: list[dict]) -> FieldDetectionResult</code><br/>
+              <strong>Inner Logic:</strong> Loads field definitions and natural language aliases from MongoDB (<code>fields</code> collection). Matches phrase *"pending fee"* against aliases for <code>pending_amount</code> (aliases: <code>"pending", "pending fee", "balance", "amount due"</code>). Extracts target field: <code>["pending_amount"]</code>.
+            </p>
+          </div>
+
+          <!-- Stage 6 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 6: Institution & API Registry Lookup</div>
+              <div class="step-file">app/repositories/institution.py & registry.py</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>await institution_repo.get_active_by_id("sjbhs")</code> and <code>await registry_repo.get_registry("sjbhs", "student", "fees", "summary")</code><br/>
+              <strong>Inner Logic:</strong> Loads institution's Base URL (<code>https://sjbhs.schoolphins.com</code>), HTTP Method (<code>POST</code>), Path (<code>/student/apiviewFeePaymentInfo</code>), Body Template (<code>{"row_id": "{user_id}"}</code>), and dynamic <code>response_mapping</code>.
+            </p>
+          </div>
+
+          <!-- Stage 7 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 7: Asynchronous ERP API Call</div>
+              <div class="step-file">app/router/api_router.py: ERPRouter.call()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>async def call(self, institution_config, registry_entry, user_id) -> dict</code><br/>
+              <strong>Inner Logic:</strong> Replaces <code>{user_id}</code> in the body template with <code>"ST123"</code> and executes an async non-blocking POST request using <code>httpx.AsyncClient</code> with timeout handling. Returns raw ERP JSON.
+            </p>
+          </div>
+
+          <!-- Stage 8 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 8: Dynamic ERP Response Field Mapping</div>
+              <div class="step-file">app/router/response_mapper.py: ResponseMapper.map()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>def map(self, raw_response, response_mapping, response_root) -> dict</code><br/>
+              <strong>Inner Logic:</strong> Iterates through the database-driven mapping dictionary (e.g. <code>"pending_amount": "pending_amount", "total_fee": "total_fee_amount"</code>) using dot-notation resolver (<code>get_nested_value</code>) to produce standard PhinsIQ data dict: <code>{"pending_amount": 15000, "total_fee": 50000}</code>.
+            </p>
+          </div>
+
+          <!-- Stage 9 -->
+          <div class="step-box">
+            <div class="step-header">
+              <div class="step-title">Stage 9: Response Template Rendering & Serialization</div>
+              <div class="step-file">app/response/template_engine.py: TemplateEngine.render()</div>
+            </div>
+            <p>
+              <strong>Function:</strong> <code>def render(self, requested_fields, mapped_data, templates_doc) -> str</code><br/>
+              <strong>Inner Logic:</strong> Loads the template for <code>pending_amount</code>: <em>"Your pending fee amount is ₹{pending_amount}."</em>, formats the currency value, and interpolates: <strong>"Your pending fee amount is ₹15,000."</strong><br/>
+              Returns structured <code>ChatResponse</code> in ~20ms without invoking expensive Claude/LLM tokens!
+            </p>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             SECTION 4: HOW DYNAMIC MAPPINGS WORK
+             ================================================================== -->
+        <section id="dynamic-mapping" class="section-card">
+          <h2><span>🗺️</span> 4. Why Dynamic Mapping Means ZERO Code Changes</h2>
+          <p>
+            Different schools use completely different ERP systems. One returns <code>total_fee_amount</code>, another returns <code>totalfeepayment</code>, and a third nests it under <code>data.billing.due</code>.
+          </p>
+          <p>
+            PhinsIQ never hardcodes these keys in Python. The database maps any arbitrary ERP JSON into standard keys:
+          </p>
+
+          <pre><code>// Client A (SJBHS) ERP Response:
+{ "total_fee_amount": 50000, "instalment_amt": 25000 }
+↓ Mapped in DB api_registry:
+{ "total_fee": "total_fee_amount", "installment_amount": "instalment_amt" }
+
+// Client B (Zenith Academy) ERP Response:
+{ "totalfeepayment": 50000, "due_bal": 15000 }
+↓ Mapped in DB api_registry:
+{ "total_fee": "totalfeepayment", "pending_amount": "due_bal" }
+
+// Result for Both:
+Standardized PhinsIQ Data: { "total_fee": 50000, "pending_amount": 15000 }</code></pre>
+        </section>
+
+        <!-- ==================================================================
+             SECTION 5: DIRECTORY & CODEBASE MAP
+             ================================================================== -->
+        <section id="file-breakdown" class="section-card">
+          <h2><span>📂</span> 5. Directory Structure & Key Files</h2>
+          <table class="guide-table">
+            <thead>
+              <tr>
+                <th>Directory / File</th>
+                <th>Responsibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>app/main.py</code></td>
+                <td>Application factory, lifespan context, CORS, error handling, route mounting.</td>
+              </tr>
+              <tr>
+                <td><code>app/core/database.py</code></td>
+                <td>Single Motor MongoDB client instance, connection pool lifecycle.</td>
+              </tr>
+              <tr>
+                <td><code>app/core/config.py</code></td>
+                <td>Pydantic Settings loading environment variables from <code>.env</code>.</td>
+              </tr>
+              <tr>
+                <td><code>app/core/logging.py</code></td>
+                <td>Structured JSON logging configuration.</td>
+              </tr>
+              <tr>
+                <td><code>app/api/v1/chat.py</code></td>
+                <td>FastAPI route for student & staff chat queries (<code>/api/v1/phinsiq/chat</code>).</td>
+              </tr>
+              <tr>
+                <td><code>app/api/v1/admin.py</code></td>
+                <td>Complete CRUD REST endpoints for institutions, modules, mappings, templates, and Live ERP tester.</td>
+              </tr>
+              <tr>
+                <td><code>app/pipeline/pipeline.py</code></td>
+                <td>The central orchestrator connecting understanding, permissions, ERP call, and templates.</td>
+              </tr>
+              <tr>
+                <td><code>app/understanding/</code></td>
+                <td><code>module_detector.py</code> (keyword intent) & <code>field_detector.py</code> (alias matching).</td>
+              </tr>
+              <tr>
+                <td><code>app/repositories/</code></td>
+                <td>Data access layers (<code>institution.py</code>, <code>registry.py</code>, <code>module_repo.py</code>) with in-process caching.</td>
+              </tr>
+              <tr>
+                <td><code>app/router/</code></td>
+                <td><code>api_router.py</code> (async httpx dispatcher) & <code>response_mapper.py</code> (dot-notation field mapper).</td>
+              </tr>
+              <tr>
+                <td><code>app/response/template_engine.py</code></td>
+                <td>Deterministic template interpolation and currency/percentage formatting.</td>
+              </tr>
+              <tr>
+                <td><code>index.html</code></td>
+                <td>Visual Web Admin Studio & Live Chat Playground.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ==================================================================
+             SECTION 6: ONBOARDING NEW CLIENT
+             ================================================================== -->
+        <section id="onboarding" class="section-card">
+          <h2><span>🛠️</span> 6. How to Onboard a New Client (3 Simple Steps via Web UI)</h2>
+          <ol>
+            <li>
+              <strong>Add Institution:</strong> Open the Admin Studio -> <code>🏢 Clients</code> -> Click <strong>+ Add New Client</strong>. Enter Institution Slug (e.g. <code>zenith_academy</code>), Base URL, and Auth type.
+            </li>
+            <li>
+              <strong>Configure API Registry & Mappings:</strong> Open <code>🗺️ ERP Mapper</code> -> Select <code>zenith_academy</code> & <code>fees</code>. Set the endpoint path (e.g. <code>/api/v1/fee-details</code>) and map their ERP keys (e.g. <code>total_fee</code> ← <code>totalfeepayment</code>). Click <strong>Save Mapping</strong>.
+            </li>
+            <li>
+              <strong>Test Live in Playground:</strong> Open <code>💬 Playground</code> -> Select <code>zenith_academy</code> and ask <em>"What is my fee?"</em>. The pipeline will automatically route the query, call the new ERP, map fields, and render the response without modifying or deploying any Python backend code!
+            </li>
+          </ol>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      PhinsIQ — Enterprise AI Middleware Platform · Parrophins Private Limited
+    </footer>
+
+  </div>
+</body>
+</html>

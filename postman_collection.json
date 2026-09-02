@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "PhinsIQ Enterprise AI Middleware",
+    "_postman_id": "phinsiq-collection-v1",
+    "description": "Postman test collection for PhinsIQ AI Middleware Platform supporting SJBHS and SAGS School.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "health"]
+        },
+        "description": "Checks if the PhinsIQ FastAPI server is online."
+      }
+    },
+    {
+      "name": "2. SJBHS - Pending Fee",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my pending fee?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        },
+        "description": "Asks for student's pending fee amount at SJBHS (row_id: 868)."
+      }
+    },
+    {
+      "name": "3. SJBHS - Total Fee",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my total fee?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "4. SJBHS - Paid Amount",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"How much have I paid?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "5. SJBHS - Complete Fee Summary",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"Show my complete fee details\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "6. SJBHS - Installment Amount",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my installment amount?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "7. SJBHS - First Installment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my first installment?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "8. SJBHS - Second Installment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my second installment?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "9. SJBHS - Exam Pending Fee",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my pending exam fee?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "10. SJBHS Student Alias - Concession",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs_student\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"What is my fee concession?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "11. SAGS School - Attendance",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sags_school\",\n  \"role\": \"student\",\n  \"user_id\": \"ST101\",\n  \"message\": \"What is my current attendance percentage?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    },
+    {
+      "name": "12. Greeting (No ERP called)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"institution_id\": \"sjbhs\",\n  \"role\": \"student\",\n  \"user_id\": \"868\",\n  \"message\": \"hi\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/phinsiq/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "phinsiq", "chat"]
+        }
+      }
+    }
+  ]
+}
