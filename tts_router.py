@@ -63,7 +63,7 @@ async def synthesize_direct(
     speaker: Optional[str] = Query(None),
     lang: Optional[str] = Query("en-IN"),
     format: Optional[Literal["json", "wav"]] = Query("json"),
-    request: Optional[Request] = None,
+    request: Request = None,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ):
     _verify_api_key(x_api_key)
