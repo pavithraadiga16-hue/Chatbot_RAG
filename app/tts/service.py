@@ -104,6 +104,22 @@ class TTSService:
                     default_speaker=settings.tts_speaker,
                     default_speed=settings.tts_speed,
                 )
+                # Ensure NLTK English taggers and cmudict are available for g2p_en / MeloTTS
+                try:
+                    import nltk
+                    import ssl
+                    try:
+                        ssl._create_default_https_context = ssl._create_unverified_context
+                    except AttributeError:
+                        pass
+                    for pkg in ("averaged_perceptron_tagger_eng", "averaged_perceptron_tagger", "cmudict"):
+                        try:
+                            nltk.download(pkg, quiet=True)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
                 t0 = time.time()
                 self._model = TTS(language="EN", device=target_device)
                 self._spk2id = dict(self._model.hps.data.spk2id.items())
