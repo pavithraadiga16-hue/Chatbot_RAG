@@ -4331,10 +4331,11 @@
        JavaScript Logic
        ========================================================================= -->
   <script>
-    // Target FastAPI on port 8000
-    const API_BASE = (window.location.port === '8000')
-      ? `${window.location.origin}/api/v1`
-      : 'http://localhost:8000/api/v1';
+    // Target FastAPI API Base
+    // Uses relative path '/api/v1' automatically on ANY domain or origin.
+    // Falls back to http://localhost:8000/api/v1 only when opened via file:// or a separate local dev server (e.g. port 5500).
+    const isLocalDevServer = window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '' && window.location.port !== '8000');
+    const API_BASE = isLocalDevServer ? 'http://localhost:8000/api/v1' : '/api/v1';
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -7599,7 +7600,7 @@
 
       // Helper function to synthesize a single chunk
       async function fetchChunkWav(chunkText, signal) {
-        const res = await fetch('/api/v1/tts/synthesize?format=wav', {
+        const res = await fetch(`${API_BASE}/tts/synthesize?format=wav`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -7942,7 +7943,7 @@
     // --- Health Check ---
     async function checkTtsHealth() {
       try {
-        const res = await fetch('/api/v1/tts/health');
+        const res = await fetch(`${API_BASE}/tts/health`);
         if (res.ok) {
           const data = await res.json();
           const cacheStat = document.getElementById('ttsCacheStat');
