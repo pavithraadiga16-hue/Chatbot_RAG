@@ -4335,12 +4335,10 @@
     // (read from PUBLIC_API_BASE_URL in .env) every time the page is served by uvicorn/FastAPI.
     // To point the console at a local backend, set PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
     // in .env and always load the page through the server (http://localhost:8000/), never via file://.
-    // The literal below only applies if this file is opened directly with no server involved,
-    // in which case there is no .env to read, so it safely defaults to the production API.
-    const configuredApiBase = '__PHINSIQ_PUBLIC_API_BASE_URL__';
-    const API_BASE = configuredApiBase === '__PHINSIQ_PUBLIC_API_BASE_URL__'
-      ? 'https://ai.phinsiq.com/api/v1'
-      : configuredApiBase;
+    // Dynamically injected from PUBLIC_API_BASE_URL in .env by app/main.py
+    const API_BASE = !'__PHINSIQ_PUBLIC_API_BASE_URL__'.startsWith('__')
+      ? '__PHINSIQ_PUBLIC_API_BASE_URL__'
+      : (window.location.protocol.startsWith('http') ? `${window.location.origin}/api/v1` : '/api/v1');
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';

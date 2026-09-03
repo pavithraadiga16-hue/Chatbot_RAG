@@ -53,8 +53,12 @@ class Settings(BaseSettings):
     app_env: str = Field(default="development", description="Runtime environment")
     app_port: int = Field(default=8000, description="Port for the HTTP server")
     public_api_base_url: str = Field(
-        default="https://ai.phinsiq.com/api/v1",
-        description="Public API base URL used by the browser console",
+        default="",
+        description=(
+            "Public API base URL used by the browser console. Leave empty to "
+            "auto-derive from APP_ENV (localhost in development, production domain "
+            "in production) via effective_public_api_base_url."
+        ),
     )
 
     # -------------------------------------------------------------------------
@@ -207,6 +211,19 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         """Returns True when running in production mode."""
         return self.app_env.lower() == "production"
+
+    @property
+    def effective_public_api_base_url(self) -> str:
+        """
+        Resolves the browser console's API base URL for the current environment.
+
+        Set PUBLIC_API_BASE_URL in .env to force a specific value (e.g. staging).
+        Otherwise this switches automatically with APP_ENV, so flipping one
+        variable is enough to go from local dev to production.
+        """
+        if self.public_api_base_url:
+            return self.public_api_base_url.rstrip("/")
+        return f"http://localhost:{self.app_port}/api/v1"
 
     @property
     def claude_enabled(self) -> bool:

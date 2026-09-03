@@ -264,7 +264,7 @@ def create_application() -> FastAPI:
             with open(index_path, "r", encoding="utf-8") as index_file:
                 html = index_file.read().replace(
                     "__PHINSIQ_PUBLIC_API_BASE_URL__",
-                    settings.public_api_base_url.rstrip("/"),
+                    settings.effective_public_api_base_url.rstrip("/"),
                 )
             return HTMLResponse(content=html)
         return JSONResponse({"message": "PhinsIQ API running. Please open index.html."})

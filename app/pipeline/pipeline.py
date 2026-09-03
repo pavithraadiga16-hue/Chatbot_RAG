@@ -442,6 +442,7 @@ class PhinsIQPipeline:
                 request_id=request_id,
                 reason="unconfigured_or_unregistered_modules",
                 confidence=module_result.confidence,
+                is_admin_erp=is_admin_erp,
             )
 
         # ==================================================================
@@ -662,6 +663,7 @@ class PhinsIQPipeline:
         request_id: str,
         reason: str,
         confidence: float,
+        is_admin_erp: bool = False,
     ) -> ChatResponse:
         """
         Production Claude AI Fallback:
@@ -679,32 +681,34 @@ class PhinsIQPipeline:
         )
 
         # Interception Guard: Check if Subject Engine can solve locally (Zero Claude call)
-        subject_res = subject_router.route_and_solve(request.message)
-        if subject_res and subject_res.handled_locally:
-            logger.info(
-                "claude_fallback_intercepted_by_subject_engine",
-                request_id=request_id,
-                subject=subject_res.subject.value,
-                topic=subject_res.topic,
-            )
-            suggestions = suggestion_engine.get_suggestions(
-                module="study_material",
-                is_overall_overview=False,
-            )
-            return ChatResponse.ok(
-                message=subject_res.formatted_markdown,
-                routes=["NA"],
-                route="NA",
-                suggestion_questions=suggestions,
-                metadata=ChatMetadata(
-                    claude_used=False,
-                    detected_module=f"{subject_res.subject.value}_engine",
-                    detected_action=subject_res.intent.value.lower(),
-                    confidence=subject_res.confidence,
-                    response_type=f"{subject_res.subject.value}_engine",
+        # Only allow academic solver interception if the query is NOT an administrative ERP request (e.g. fees, attendance)
+        if not is_admin_erp:
+            subject_res = subject_router.route_and_solve(request.message)
+            if subject_res and subject_res.handled_locally:
+                logger.info(
+                    "claude_fallback_intercepted_by_subject_engine",
                     request_id=request_id,
-                ) if settings.is_development else None,
-            )
+                    subject=subject_res.subject.value,
+                    topic=subject_res.topic,
+                )
+                suggestions = suggestion_engine.get_suggestions(
+                    module="study_material",
+                    is_overall_overview=False,
+                )
+                return ChatResponse.ok(
+                    message=subject_res.formatted_markdown,
+                    routes=["NA"],
+                    route="NA",
+                    suggestion_questions=suggestions,
+                    metadata=ChatMetadata(
+                        claude_used=False,
+                        detected_module=f"{subject_res.subject.value}_engine",
+                        detected_action=subject_res.intent.value.lower(),
+                        confidence=subject_res.confidence,
+                        response_type=f"{subject_res.subject.value}_engine",
+                        request_id=request_id,
+                    ) if settings.is_development else None,
+                )
 
 
         institution = await institution_repo.get_active_by_id(request.institution_id)

@@ -7,6 +7,7 @@ PURPOSE:
     Supports RapidFuzz matching, formula bindings, definitions, and real-world examples.
 """
 
+import re
 from typing import Optional
 from pydantic import BaseModel, Field
 from rapidfuzz import fuzz
@@ -313,6 +314,9 @@ class PhysicsKnowledgeBase:
             for alias in concept.aliases:
                 if alias == lower_q:
                     best_score = max(best_score, 100.0)
+                elif len(alias) <= 3:
+                    if re.search(r'\b' + re.escape(alias) + r'\b', lower_q):
+                        best_score = max(best_score, 90.0)
                 elif alias in lower_q:
                     best_score = max(best_score, 90.0)
                 else:
@@ -321,7 +325,10 @@ class PhysicsKnowledgeBase:
 
             # Match keywords
             for kw in concept.keywords:
-                if kw in lower_q:
+                if len(kw) <= 3:
+                    if re.search(r'\b' + re.escape(kw) + r'\b', lower_q):
+                        best_score = max(best_score, 85.0)
+                elif kw in lower_q:
                     best_score = max(best_score, 85.0)
 
             if best_score >= threshold:
