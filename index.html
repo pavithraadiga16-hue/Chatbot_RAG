@@ -4133,7 +4133,7 @@
                 <button class="code-tab-btn" id="codeTab-python" onclick="switchSnippetTab('python')">Python</button>
               </div>
 
-              <div class="json-box" id="snippetBox" style="font-size:11.5px; max-height:160px;">curl -X POST http://127.0.0.1:8000/api/v1/tts/synthesize \
+              <div class="json-box" id="snippetBox" style="font-size:11.5px; max-height:160px;">curl -X POST __PHINSIQ_PUBLIC_API_BASE_URL__/tts/synthesize \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello world", "speaker": "EN_INDIA", "speed": 1.0}' \
   --output speech.wav</div>
@@ -4331,11 +4331,16 @@
        JavaScript Logic
        ========================================================================= -->
   <script>
-    // Target FastAPI API Base
-    // Uses relative path '/api/v1' automatically on ANY domain or origin.
-    // Falls back to http://localhost:8000/api/v1 only when opened via file:// or a separate local dev server (e.g. port 5500).
-    const isLocalDevServer = window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '' && window.location.port !== '8000');
-    const API_BASE = isLocalDevServer ? 'http://localhost:8000/api/v1' : '/api/v1';
+    // app/main.py's serve_index() replaces this marker with settings.public_api_base_url
+    // (read from PUBLIC_API_BASE_URL in .env) every time the page is served by uvicorn/FastAPI.
+    // To point the console at a local backend, set PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    // in .env and always load the page through the server (http://localhost:8000/), never via file://.
+    // The literal below only applies if this file is opened directly with no server involved,
+    // in which case there is no .env to read, so it safely defaults to the production API.
+    const configuredApiBase = '__PHINSIQ_PUBLIC_API_BASE_URL__';
+    const API_BASE = configuredApiBase === '__PHINSIQ_PUBLIC_API_BASE_URL__'
+      ? 'https://ai.phinsiq.com/api/v1'
+      : configuredApiBase;
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -8008,7 +8013,7 @@
 
       if (currentSnippetTab === 'curl') {
         box.textContent = `# Synthesize speech via REST API
-curl -X POST http://127.0.0.1:8000/api/v1/tts/synthesize \\
+curl -X POST ${API_BASE}/tts/synthesize \\
   -H "Content-Type: application/json" \\
   -d '{"text": "${text.substring(0, 40)}...", "speaker": "${currentTtsSpeaker}", "speed": ${speed}}' \\
   --output speech.wav`;
@@ -8020,7 +8025,7 @@ define('VEXYL_STYLE', 'default');
 define('VEXYL_SPEED', ${speed});
 
 // Batch Synthesize Call
-$ch = curl_init("http://127.0.0.1:8000/batch/synthesize");
+$ch = curl_init("${API_BASE}/tts/batch/synthesize");
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
     'text'  => "${text.substring(0, 40)}...",
     'lang'  => VEXYL_LANG,

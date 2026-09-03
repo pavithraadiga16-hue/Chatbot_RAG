@@ -41,7 +41,7 @@ from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.core.config import settings
 from app.core.database import lifespan as db_lifespan
@@ -245,10 +245,14 @@ def create_application() -> FastAPI:
     async def serve_index():
         """Serve the PhinsIQ Web Console & Admin Studio."""
         import os
-        from fastapi.responses import FileResponse
         index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html")
         if os.path.exists(index_path):
-            return FileResponse(index_path)
+            with open(index_path, "r", encoding="utf-8") as index_file:
+                html = index_file.read().replace(
+                    "__PHINSIQ_PUBLIC_API_BASE_URL__",
+                    settings.public_api_base_url.rstrip("/"),
+                )
+            return HTMLResponse(content=html)
         return JSONResponse({"message": "PhinsIQ API running. Please open index.html."})
 
     @application.get("/guide", include_in_schema=False)

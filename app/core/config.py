@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     app_name: str = Field(default="PhinsIQ", description="Application display name")
     app_env: str = Field(default="development", description="Runtime environment")
     app_port: int = Field(default=8000, description="Port for the HTTP server")
+    public_api_base_url: str = Field(
+        default="https://ai.phinsiq.com/api/v1",
+        description="Public API base URL used by the browser console",
+    )
 
     # -------------------------------------------------------------------------
     # MongoDB
