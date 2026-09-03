@@ -111,8 +111,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256")
     jwt_expire_minutes: int = Field(default=60)
     cors_origins: str = Field(
-        default="https://ai.phinsiq.com,http://ai.phinsiq.com,https://phinsiq.parrophins.com",
-        description="Comma-separated list of allowed CORS origins for production"
+        default="*",
+        description="Comma-separated list of allowed CORS origins. Set in .env via CORS_ORIGINS.",
+        validation_alias=AliasChoices("cors_origins", "allowed_origins", "CORS_ORIGINS", "ALLOWED_ORIGINS"),
     )
 
     # -------------------------------------------------------------------------

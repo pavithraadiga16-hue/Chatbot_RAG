@@ -4332,11 +4332,10 @@
        ========================================================================= -->
   <script>
     // Target FastAPI API Base
-    // In production (https://ai.phinsiq.com) or when served by FastAPI (http://localhost:8000), use current origin.
-    // Fall back to http://localhost:8000/api/v1 only for file:// protocol or separate Live Server (port 5500).
-    const API_BASE = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes(':5500') && !window.location.origin.includes(':3000'))
-      ? `${window.location.origin}/api/v1`
-      : 'http://localhost:8000/api/v1';
+    // Uses relative path '/api/v1' automatically on ANY domain or origin.
+    // Falls back to http://localhost:8000/api/v1 only when opened via file:// or a separate local dev server (e.g. port 5500).
+    const isLocalDevServer = window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '' && window.location.port !== '8000');
+    const API_BASE = isLocalDevServer ? 'http://localhost:8000/api/v1' : '/api/v1';
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
