@@ -142,9 +142,14 @@ def create_application() -> FastAPI:
     if settings.is_development:
         allowed_origins = ["*"]
     else:
-        # In production, restrict to known frontend origins
-        # TODO: Move this to environment configuration in Phase 13
-        allowed_origins = ["https://phinsiq.parrophins.com"]
+        # In production, restrict to known frontend origins and configured origins
+        configured = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+        default_origins = [
+            "https://ai.phinsiq.com",
+            "http://ai.phinsiq.com",
+            "https://phinsiq.parrophins.com",
+        ]
+        allowed_origins = list(dict.fromkeys(configured + default_origins))
 
     application.add_middleware(
         CORSMiddleware,

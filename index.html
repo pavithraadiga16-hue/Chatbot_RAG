@@ -4331,8 +4331,10 @@
        JavaScript Logic
        ========================================================================= -->
   <script>
-    // Target FastAPI on port 8000
-    const API_BASE = (window.location.port === '8000')
+    // Target FastAPI API Base
+    // In production (https://ai.phinsiq.com) or when served by FastAPI (http://localhost:8000), use current origin.
+    // Fall back to http://localhost:8000/api/v1 only for file:// protocol or separate Live Server (port 5500).
+    const API_BASE = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes(':5500') && !window.location.origin.includes(':3000'))
       ? `${window.location.origin}/api/v1`
       : 'http://localhost:8000/api/v1';
 
@@ -7599,7 +7601,7 @@
 
       // Helper function to synthesize a single chunk
       async function fetchChunkWav(chunkText, signal) {
-        const res = await fetch('/api/v1/tts/synthesize?format=wav', {
+        const res = await fetch(`${API_BASE}/tts/synthesize?format=wav`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -7942,7 +7944,7 @@
     // --- Health Check ---
     async function checkTtsHealth() {
       try {
-        const res = await fetch('/api/v1/tts/health');
+        const res = await fetch(`${API_BASE}/tts/health`);
         if (res.ok) {
           const data = await res.json();
           const cacheStat = document.getElementById('ttsCacheStat');
