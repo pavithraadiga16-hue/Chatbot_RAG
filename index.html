@@ -7840,20 +7840,40 @@
     // --- High Definition Browser Fallback Preview ---
     function handleTtsPreviewFallback(text, speed, detail) {
       if ('speechSynthesis' in window) {
-        showToast('Playing voice preview', 'info');
+        showToast('⚠️ MeloTTS offline on server — Playing browser voice fallback', 'warning');
 
         const utter = new SpeechSynthesisUtterance(text);
         utter.rate = speed || 1.00;
-        utter.pitch = 1.0;
 
         const voices = window.speechSynthesis.getVoices() || [];
-        let chosenVoice = voices.find(v => v.lang === 'en-IN' || v.lang.startsWith('en'));
+        let chosenVoice = null;
+        let pitch = 1.0;
+
+        // Smart voice mapping based on selected MeloTTS speaker
+        if (currentTtsSpeaker === 'EN_INDIA') {
+          chosenVoice = voices.find(v => v.lang === 'en-IN') || voices.find(v => v.name.toLowerCase().includes('india')) || voices.find(v => v.lang.startsWith('en'));
+          pitch = 1.05;
+        } else if (currentTtsSpeaker === 'EN-BR') {
+          chosenVoice = voices.find(v => v.lang === 'en-GB' || v.lang === 'en-UK' || v.name.toLowerCase().includes('british') || v.name.toLowerCase().includes('oliver') || v.name.toLowerCase().includes('daniel')) || voices.find(v => v.lang.startsWith('en'));
+          pitch = 0.95;
+        } else if (currentTtsSpeaker === 'EN-AU') {
+          chosenVoice = voices.find(v => v.lang === 'en-AU' || v.name.toLowerCase().includes('australia') || v.name.toLowerCase().includes('karen')) || voices.find(v => v.lang.startsWith('en'));
+          pitch = 1.10;
+        } else if (currentTtsSpeaker === 'EN-US') {
+          chosenVoice = voices.find(v => (v.lang === 'en-US' && (v.name.includes('Samantha') || v.name.includes('Natural') || v.name.includes('Zira') || v.name.includes('Female')))) || voices.find(v => v.lang === 'en-US');
+          pitch = 1.0;
+        } else {
+          chosenVoice = voices.find(v => v.lang.startsWith('en'));
+          pitch = 1.0;
+        }
+
+        utter.pitch = pitch;
 
         if (chosenVoice) {
           utter.voice = chosenVoice;
-          utter.lang = chosenVoice.lang || 'en-IN';
+          utter.lang = chosenVoice.lang || 'en-US';
         } else {
-          utter.lang = 'en-IN';
+          utter.lang = 'en-US';
         }
 
         const visualizer = document.getElementById('ttsVisualizer');
