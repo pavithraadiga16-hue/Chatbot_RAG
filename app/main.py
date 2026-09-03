@@ -91,6 +91,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from app.understanding.semantic_matcher import semantic_matcher
         await semantic_matcher.load_learned_patterns_from_db()
 
+        # Warm up MeloTTS in the background so a missing torch/melotts install
+        # is logged at startup instead of only surfacing as a browser fallback.
+        import asyncio
+        from app.tts.service import tts_service
+
+        async def _warmup_tts() -> None:
+            await asyncio.to_thread(lambda: tts_service.is_available)
+            if tts_service.is_available:
+                logger.info("tts_warmup_ready", sample_rate=tts_service.sample_rate)
+            else:
+                logger.warning("tts_warmup_unavailable", error=tts_service.init_error)
+
+        asyncio.create_task(_warmup_tts())
+
         logger.info("phinsiq_ready", message="PhinsIQ is ready to receive requests.")
         yield
 
