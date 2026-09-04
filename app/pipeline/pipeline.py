@@ -245,7 +245,7 @@ class PhinsIQPipeline:
             and module_result.confidence >= MODULE_CONFIDENCE_THRESHOLD
         )
 
-        if not is_admin_erp:
+        if settings.enable_subject_engine and not is_admin_erp:
             subject_res = subject_router.route_and_solve(request.message)
             if subject_res and subject_res.handled_locally:
                 logger.info(
@@ -681,8 +681,8 @@ class PhinsIQPipeline:
         )
 
         # Interception Guard: Check if Subject Engine can solve locally (Zero Claude call)
-        # Only allow academic solver interception if the query is NOT an administrative ERP request (e.g. fees, attendance)
-        if not is_admin_erp:
+        # Only allow academic solver interception if enabled and query is NOT an administrative ERP request (e.g. fees, attendance)
+        if settings.enable_subject_engine and not is_admin_erp:
             subject_res = subject_router.route_and_solve(request.message)
             if subject_res and subject_res.handled_locally:
                 logger.info(

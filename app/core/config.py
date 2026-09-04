@@ -187,6 +187,41 @@ class Settings(BaseSettings):
     )
 
     # -------------------------------------------------------------------------
+    # Subject Engine (Mathematics & Science)
+    # -------------------------------------------------------------------------
+
+    enable_subject_engine: bool = Field(
+        default=False,
+        description="Toggle local Subject Engines (Mathematics, Science). Set to False to disable subject engine answers.",
+        validation_alias=AliasChoices(
+            "enable_subject_engine",
+            "subject_engine_enabled",
+            "ENABLE_SUBJECT_ENGINE",
+            "SUBJECT_ENGINE_ENABLED",
+        ),
+    )
+    enable_math_engine: bool = Field(
+        default=False,
+        description="Toggle local Mathematics engine.",
+        validation_alias=AliasChoices(
+            "enable_math_engine",
+            "math_engine_enabled",
+            "ENABLE_MATH_ENGINE",
+            "MATH_ENGINE_ENABLED",
+        ),
+    )
+    enable_science_engine: bool = Field(
+        default=False,
+        description="Toggle local Science engine (Physics, Chemistry, Biology).",
+        validation_alias=AliasChoices(
+            "enable_science_engine",
+            "science_engine_enabled",
+            "ENABLE_SCIENCE_ENGINE",
+            "SCIENCE_ENGINE_ENABLED",
+        ),
+    )
+
+    # -------------------------------------------------------------------------
     # Logging
     # -------------------------------------------------------------------------
 

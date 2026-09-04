@@ -14,6 +14,7 @@ from app.subject_engine.science.router import science_engine
 from app.subject_engine.science.physics.engine import physics_engine
 from app.subject_engine.science.chemistry.engine import chemistry_engine
 from app.subject_engine.science.biology.engine import biology_engine
+from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -31,6 +32,11 @@ class SubjectEngineRouter:
         self.register_engine(physics_engine)
         self.register_engine(chemistry_engine)
         self.register_engine(biology_engine)
+
+    @property
+    def is_enabled(self) -> bool:
+        """Returns True if local subject engine answering is globally enabled."""
+        return settings.enable_subject_engine
 
     def register_engine(self, engine: BaseSubjectEngine) -> None:
         """Register a subject engine."""
@@ -53,39 +59,44 @@ class SubjectEngineRouter:
         If any subject engine can solve it confidently, returns the solved result.
         Otherwise returns None.
         """
+        if not settings.enable_subject_engine:
+            return None
+
         # Step 1: Check Science Engine (Physics, Chemistry, Biology)
-        sci_eng = self._engines.get(SubjectType.SCIENCE)
-        if sci_eng:
-            can_handle, conf = sci_eng.can_handle(query)
-            if can_handle and conf >= min_confidence:
-                result = sci_eng.solve(query, context=context)
-                if result and result.handled_locally:
-                    logger.info(
-                        "subject_engine_solved_locally",
-                        subject=result.subject.value,
-                        topic=result.topic,
-                        intent=result.intent.value,
-                        confidence=result.confidence,
-                        execution_time_ms=result.execution_time_ms,
-                    )
-                    return result
+        if settings.enable_science_engine:
+            sci_eng = self._engines.get(SubjectType.SCIENCE)
+            if sci_eng:
+                can_handle, conf = sci_eng.can_handle(query)
+                if can_handle and conf >= min_confidence:
+                    result = sci_eng.solve(query, context=context)
+                    if result and result.handled_locally:
+                        logger.info(
+                            "subject_engine_solved_locally",
+                            subject=result.subject.value,
+                            topic=result.topic,
+                            intent=result.intent.value,
+                            confidence=result.confidence,
+                            execution_time_ms=result.execution_time_ms,
+                        )
+                        return result
 
         # Step 2: Check Mathematics Engine
-        math_eng = self._engines.get(SubjectType.MATHEMATICS)
-        if math_eng:
-            can_handle, conf = math_eng.can_handle(query)
-            if can_handle and conf >= min_confidence:
-                result = math_eng.solve(query, context=context)
-                if result and result.handled_locally:
-                    logger.info(
-                        "subject_engine_solved_locally",
-                        subject=result.subject.value,
-                        topic=result.topic,
-                        intent=result.intent.value,
-                        confidence=result.confidence,
-                        execution_time_ms=result.execution_time_ms,
-                    )
-                    return result
+        if settings.enable_math_engine:
+            math_eng = self._engines.get(SubjectType.MATHEMATICS)
+            if math_eng:
+                can_handle, conf = math_eng.can_handle(query)
+                if can_handle and conf >= min_confidence:
+                    result = math_eng.solve(query, context=context)
+                    if result and result.handled_locally:
+                        logger.info(
+                            "subject_engine_solved_locally",
+                            subject=result.subject.value,
+                            topic=result.topic,
+                            intent=result.intent.value,
+                            confidence=result.confidence,
+                            execution_time_ms=result.execution_time_ms,
+                        )
+                        return result
 
         return None
 

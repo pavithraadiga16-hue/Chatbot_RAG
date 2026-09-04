@@ -11,6 +11,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from app.core.config import settings
 from app.subject_engine.base import SubjectSolveResult, SubjectType
 from app.subject_engine.router import subject_router
 from app.subject_engine.mathematics.engine import math_engine
@@ -90,6 +91,11 @@ class GenericSolveRequest(BaseModel):
 )
 async def solve_mathematics(request: MathSolveRequest) -> SubjectSolveResult:
     """Solve mathematics question deterministically."""
+    if not settings.enable_subject_engine or not settings.enable_math_engine:
+        raise HTTPException(
+            status_code=400,
+            detail="Mathematics Engine is currently disabled.",
+        )
     return math_engine.solve(request.question, context=request.context)
 
 
@@ -101,6 +107,11 @@ async def solve_mathematics(request: MathSolveRequest) -> SubjectSolveResult:
 )
 async def solve_science(request: ScienceSolveRequest) -> SubjectSolveResult:
     """Solve science question deterministically across Physics, Chemistry, Biology."""
+    if not settings.enable_subject_engine or not settings.enable_science_engine:
+        raise HTTPException(
+            status_code=400,
+            detail="Science Engine is currently disabled.",
+        )
     return science_engine.solve(request.question, context=request.context)
 
 
@@ -112,6 +123,11 @@ async def solve_science(request: ScienceSolveRequest) -> SubjectSolveResult:
 )
 async def solve_physics(request: ScienceSolveRequest) -> SubjectSolveResult:
     """Solve Physics question deterministically."""
+    if not settings.enable_subject_engine or not settings.enable_science_engine:
+        raise HTTPException(
+            status_code=400,
+            detail="Physics Engine is currently disabled.",
+        )
     return physics_engine.solve(request.question, context=request.context)
 
 
@@ -123,6 +139,11 @@ async def solve_physics(request: ScienceSolveRequest) -> SubjectSolveResult:
 )
 async def solve_chemistry(request: ScienceSolveRequest) -> SubjectSolveResult:
     """Solve Chemistry question deterministically."""
+    if not settings.enable_subject_engine or not settings.enable_science_engine:
+        raise HTTPException(
+            status_code=400,
+            detail="Chemistry Engine is currently disabled.",
+        )
     return chemistry_engine.solve(request.question, context=request.context)
 
 
@@ -134,6 +155,11 @@ async def solve_chemistry(request: ScienceSolveRequest) -> SubjectSolveResult:
 )
 async def solve_biology(request: ScienceSolveRequest) -> SubjectSolveResult:
     """Solve Biology question deterministically."""
+    if not settings.enable_subject_engine or not settings.enable_science_engine:
+        raise HTTPException(
+            status_code=400,
+            detail="Biology Engine is currently disabled.",
+        )
     return biology_engine.solve(request.question, context=request.context)
 
 
@@ -145,6 +171,11 @@ async def solve_biology(request: ScienceSolveRequest) -> SubjectSolveResult:
 )
 async def solve_subject(request: GenericSolveRequest) -> SubjectSolveResult:
     """Route and solve across registered subject engines."""
+    if not settings.enable_subject_engine:
+        raise HTTPException(
+            status_code=400,
+            detail="Subject Engine is currently disabled.",
+        )
     result = subject_router.route_and_solve(request.question, context=request.context)
     if not result:
         raise HTTPException(
