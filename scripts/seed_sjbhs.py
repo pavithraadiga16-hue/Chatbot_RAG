@@ -34,7 +34,7 @@ INSTITUTIONS = [
         "short_name": "SJBHS",
         "status": "active",
         "api_config": {
-            "base_url": "https://sjbhs.schoolphins.com",
+            "base_url": "https://demo.parrophins.in/sjbhs",
             "auth_type": "none",
             "headers": {
                 "Content-Type": "application/json",
@@ -62,7 +62,7 @@ INSTITUTIONS = [
         "short_name": "SJBHS Student",
         "status": "active",
         "api_config": {
-            "base_url": "https://sjbhs.schoolphins.com",
+            "base_url": "https://demo.parrophins.in/sjbhs",
             "auth_type": "none",
             "headers": {
                 "Content-Type": "application/json",

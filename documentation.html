@@ -1410,7 +1410,7 @@ typo_score = fuzz.ratio(<span class="hl-str">"atendance"</span>, <span class="hl
 <span class="hl-comment"># Async ERP Call with connection pool & 10s strict timeout</span>
 <span class="hl-kw">async with</span> httpx.AsyncClient(timeout=<span class="hl-num">10.0</span>) <span class="hl-kw">as</span> client:
     resp = <span class="hl-kw">await</span> client.post(
-        <span class="hl-str">"https://sjbhs.schoolphins.com/student/apiviewFeePaymentInfo"</span>,
+        <span class="hl-str">"https://demo.parrophins.in/sjbhs/student/apiviewFeePaymentInfo"</span>,
         json={<span class="hl-str">"row_id"</span>: <span class="hl-str">"ST123"</span>},
         headers={<span class="hl-str">"Content-Type"</span>: <span class="hl-str">"application/json"</span>}
     )
