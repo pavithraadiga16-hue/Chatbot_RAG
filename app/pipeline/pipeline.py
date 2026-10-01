@@ -245,6 +245,9 @@ class PhinsIQPipeline:
             and module_result.confidence >= MODULE_CONFIDENCE_THRESHOLD
         )
 
+        # ==================================================================
+        # STAGE 2.1: Local Subject Engine (when enabled)
+        # ==================================================================
         if settings.enable_subject_engine and not is_admin_erp:
             subject_res = subject_router.route_and_solve(request.message)
             if subject_res and subject_res.handled_locally:
@@ -281,11 +284,6 @@ class PhinsIQPipeline:
                     ) if settings.is_development else None,
                 )
 
-        # ==================================================================
-        # STAGE 2.2: Website Knowledge Search (for General School Questions)
-        # If not an ERP module, check if the question relates to the
-        # institution's crawled website (overview, history, motto, facilities)
-        # ==================================================================
         if not is_admin_erp:
             website_ans = await website_engine.search_and_answer(
                 institution_id=request.institution_id,
@@ -314,12 +312,12 @@ class PhinsIQPipeline:
                     ) if settings.is_development else None,
                 )
 
-        # If confidence too low, fall back to Claude (Phase 10)
-        if not module_result.module or module_result.confidence < MODULE_CONFIDENCE_THRESHOLD:
+        # If not an ERP keyword match, directly hit the LLM API and save table each time
+        if not is_admin_erp or not module_result.module or module_result.confidence < MODULE_CONFIDENCE_THRESHOLD:
             return await self._execute_claude_fallback(
                 request=request,
                 request_id=request_id,
-                reason="low_module_confidence",
+                reason="no_keyword_match",
                 confidence=module_result.confidence,
             )
 
@@ -679,6 +677,40 @@ class PhinsIQPipeline:
             reason=reason,
             confidence=confidence,
         )
+
+        if getattr(settings, "direct_llm_fallback", True):
+            # Directly hit LLM API and save to database table each time
+            answer, is_cached = await claude_service.generate_response(
+                question=request.message,
+                institution_id=request.institution_id,
+                role=request.role,
+                user_id=request.user_id,
+                student_context_data={},
+                force_fresh=False,
+            )
+
+            routes = await route_service.get_routes(
+                institution_id=request.institution_id,
+                modules=None,
+                is_overall_overview=True,
+                answer_text=answer,
+            )
+            suggestions = suggestion_engine.get_suggestions(
+                claude_used=True,
+            )
+
+            return ChatResponse.ok(
+                message=answer,
+                routes=routes,
+                route=routes[0] if routes else "/dashboard",
+                suggestion_questions=suggestions,
+                metadata=ChatMetadata(
+                    claude_used=True,
+                    confidence=confidence,
+                    response_type="llm" if not is_cached else "llm_cached",
+                    request_id=request_id,
+                ) if settings.is_development else None,
+            )
 
         # Interception Guard: Check if Subject Engine can solve locally (Zero Claude call)
         # Only allow academic solver interception if enabled and query is NOT an administrative ERP request (e.g. fees, attendance)

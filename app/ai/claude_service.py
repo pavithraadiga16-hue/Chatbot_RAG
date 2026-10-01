@@ -30,18 +30,20 @@ logger = get_logger(__name__)
 ACADEMIC_SYSTEM_PROMPT = (
     "You are PhinsIQ, the official AI Academic Assistant for educational institutions and school portals.\n\n"
     "YOUR PRIMARY PURPOSE:\n"
-    "• Assist students, parents, and educators with their academic life, student records, attendance, fees, "
-    "homework, study materials, circulars/notices, exams, and school calendar events.\n"
-    "• Utilize the provided verified Student ERP Context to deliver accurate, personalized, and warm answers.\n\n"
-    "STRICT EDUCATIONAL & SCOPE GUARDRAILS:\n"
-    "1. Answer ONLY queries related to the student, their school, academics, homework, lesson notes, portions, "
-    "attendance, fees, circulars, and school portal services.\n"
-    "2. If the user asks off-topic questions completely outside education or the school portal (e.g., coding scripts, "
-    "video games, general politics, gossip, hacking, general chat), politely decline by stating that you are dedicated "
-    "exclusively to school and academic assistance, and offer to help with their studies, homework, or portal data instead.\n"
-    "3. When asked conversational identity questions (e.g. 'do you know me?', 'who am i?', 'tell about me'), warmly "
-    "identify the student using the provided Student Context (Name, Class, Section, Admission Number, School).\n"
-    "4. Keep responses concise, clear, polite, and formatted with clean Markdown. Do not exceed 500 tokens."
+    "• Assist students, parents, and educators with all education-related questions: subjects, mathematics, "
+    "science, physics, chemistry, biology, homework help, conceptual explanations, study guidance, exam tips, "
+    "and general academic queries.\n"
+    "• Assist with school portal services and student records: attendance, fees, homework, study materials, "
+    "circulars, exams, and calendar events.\n"
+    "• When available, utilize the provided Student ERP Context to deliver accurate, personalized, and warm answers.\n\n"
+    "CORE GUIDELINES:\n"
+    "1. Readily explain concepts, solve academic problems, and answer all educational inquiries across any subject.\n"
+    "2. If asked whether you know a subject or topic (e.g. 'do you know mathematics?'), warmly confirm your capabilities "
+    "and invite the student to ask their question.\n"
+    "3. When asked conversational identity questions ('who am i?', 'do you know me?'), identify the student using the Student Context if available.\n"
+    "4. If asked questions completely outside education or the school portal (e.g. video games, celebrity gossip, hacking), "
+    "politely steer the student back to their studies, homework, or portal records.\n"
+    "5. Keep responses concise, clear, polite, and formatted with clean Markdown. Do not exceed 500 tokens."
 )
 
 
@@ -51,7 +53,9 @@ class ClaudeService:
     def __init__(self, cache_ttl_seconds: int = 600) -> None:
         self.cache_ttl = cache_ttl_seconds
         self._cache: dict[str, dict[str, Any]] = {}
-        self.api_url = "https://api.anthropic.com/v1/messages"
+        # Legacy Claude API URL (commented out):
+        # self.api_url = "https://api.anthropic.com/v1/messages"
+        self.api_url = settings.llm_api_url
 
     def _generate_cache_key(self, institution_id: str, role: str, user_id: str, question: str) -> str:
         raw = f"{institution_id}:{role}:{user_id}:{question.strip().lower()}"
@@ -164,158 +168,145 @@ class ClaudeService:
         role: str,
         user_id: str,
         student_context_data: Optional[dict[str, Any]] = None,
+        force_fresh: bool = False,
     ) -> tuple[str, bool]:
         """
-        Generates an academic response via Claude or Cache.
+        Generates an academic response via LLM API or Cache.
+
+        Args:
+            force_fresh: When True (default), bypasses cache and directly hits LLM API,
+                         saving every call to the database table.
 
         Returns:
             Tuple of (response_text, is_cache_hit)
         """
-        # 1. Check MongoDB persistent 6-hour cache
-        try:
-            cached_doc = await claude_repo.find_recent_response(
-                institution_id=institution_id,
-                user_id=user_id,
-                question=question,
-                max_age_hours=6,
-            )
-            if cached_doc and cached_doc.get("answer"):
-                logger.info(
-                    "claude_mongodb_cache_hit_within_6_hours",
+        if not force_fresh:
+            # 1. Check MongoDB persistent 6-hour cache
+            try:
+                cached_doc = await claude_repo.find_recent_response(
                     institution_id=institution_id,
                     user_id=user_id,
-                    created_at=str(cached_doc.get("created_at")),
+                    question=question,
+                    max_age_hours=6,
                 )
-                return cached_doc["answer"], True
-        except Exception as exc:
-            logger.warning("claude_mongodb_cache_check_failed", error=str(exc))
+                if cached_doc and cached_doc.get("answer"):
+                    logger.info(
+                        "claude_mongodb_cache_hit_within_6_hours",
+                        institution_id=institution_id,
+                        user_id=user_id,
+                        created_at=str(cached_doc.get("created_at")),
+                    )
+                    return cached_doc["answer"], True
+            except Exception as exc:
+                logger.warning("claude_mongodb_cache_check_failed", error=str(exc))
 
-        # 2. Check local in-memory fallback cache
+            # 2. Check local in-memory fallback cache
+            cache_key = self._generate_cache_key(institution_id, role, user_id, question)
+            cached = self._get_from_cache(cache_key)
+            if cached:
+                logger.info("claude_in_memory_cache_hit", institution_id=institution_id, user_id=user_id)
+                return cached["answer"], True
+
         cache_key = self._generate_cache_key(institution_id, role, user_id, question)
-        cached = self._get_from_cache(cache_key)
-        if cached:
-            logger.info("claude_in_memory_cache_hit", institution_id=institution_id, user_id=user_id)
-            return cached["answer"], True
 
         # Format context
         context_str = self.format_student_context(student_context_data or {})
-        user_message_content = f"{context_str}\n\nStudent Question: {question}"
 
-        api_key = settings.claude_api_key
-        if not api_key:
-            logger.warning("claude_api_key_missing_returning_fallback")
-            return (
-                "I'm here to help with your school portal! You can ask about your pending fees, "
-                "attendance percentage, homework, study materials, notices, or personal profile.",
-                False,
-            )
+        # ---------------------------------------------------------------------
+        # 1. Primary Fallback: RunPod Qwen3:14b / Ollama API (/api/generate)
+        # ---------------------------------------------------------------------
+        llm_url = settings.llm_api_url
+        if llm_url:
+            prompt_parts = [ACADEMIC_SYSTEM_PROMPT.strip()]
+            if context_str and context_str.strip() != "=== VERIFIED STUDENT ERP RECORDS ===":
+                prompt_parts.append(f"STUDENT ACADEMIC & INSTITUTION PORTAL CONTEXT:\n{context_str.strip()}")
+            prompt_parts.append(f"Student Question: {question.strip()}")
+            prompt_parts.append("Answer:")
+            full_prompt = "\n\n".join(prompt_parts)
 
-        headers = {
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-            "anthropic-beta": "prompt-caching-2024-07-31",
-            "content-type": "application/json",
-        }
+            payload = {
+                "model": settings.llm_model,
+                "prompt": full_prompt,
+                "stream": settings.llm_stream,
+                "think": settings.llm_think,
+                "options": {
+                    "num_predict": settings.llm_num_predict,
+                    "temperature": settings.llm_temperature,
+                },
+            }
 
-        payload = {
-            "model": settings.claude_model,
-            "max_tokens": settings.claude_max_tokens,
-            "system": [
-                {
-                    "type": "text",
-                    "text": ACADEMIC_SYSTEM_PROMPT,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"STUDENT ACADEMIC & INSTITUTION PORTAL CONTEXT:\n{context_str}",
-                            "cache_control": {"type": "ephemeral"},
-                        },
-                        {
-                            "type": "text",
-                            "text": f"Student Question: {question}",
-                        },
-                    ],
-                }
-            ],
-        }
-
-        start_time = time.time()
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                resp = await client.post(self.api_url, headers=headers, json=payload)
-                duration_ms = (time.time() - start_time) * 1000
-
-                if resp.status_code == 200:
-                    data = resp.json()
-                    answer_text = ""
-                    content_blocks = data.get("content", [])
-                    for block in content_blocks:
-                        if block.get("type") == "text":
-                            answer_text += block.get("text", "")
-
-                    answer_text = answer_text.strip()
-                    usage = data.get("usage", {})
-                    cache_read = usage.get("cache_read_input_tokens", 0)
-                    cache_created = usage.get("cache_creation_input_tokens", 0)
-                    input_toks = usage.get("input_tokens", 0)
-                    output_toks = usage.get("output_tokens", 0)
-                    tokens_used = {
-                        "input_tokens": input_toks,
-                        "output_tokens": output_toks,
-                        "cache_read_input_tokens": cache_read,
-                        "cache_creation_input_tokens": cache_created,
-                        "total_tokens": input_toks + output_toks + cache_read + cache_created,
-                    }
-                    logger.info(
-                        "claude_prompt_caching_metrics",
-                        cache_read_input_tokens=cache_read,
-                        cache_creation_input_tokens=cache_created,
-                        input_tokens=input_toks,
-                        output_toks=output_toks,
-                        duration_ms=int(duration_ms),
+            start_time = time.time()
+            try:
+                async with httpx.AsyncClient(timeout=45.0) as client:
+                    resp = await client.post(
+                        llm_url,
+                        headers={"Content-Type": "application/json"},
+                        json=payload,
                     )
+                    duration_ms = (time.time() - start_time) * 1000
 
-                    # Cache response
-                    self._save_to_cache(cache_key, answer_text, tokens_used)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        answer_text = (data.get("response") or "").strip()
+                        if not answer_text and isinstance(data.get("message"), dict):
+                            answer_text = (data["message"].get("content") or "").strip()
 
-                    # Log to MongoDB
-                    await claude_repo.log_response(
-                        institution_id=institution_id,
-                        user_id=user_id,
-                        role=role,
-                        question=question,
-                        answer=answer_text,
-                        model=settings.claude_model,
-                        tokens_used=tokens_used,
-                        duration_ms=duration_ms,
-                    )
+                        if answer_text:
+                            prompt_eval_count = data.get("prompt_eval_count", 0)
+                            eval_count = data.get("eval_count", 0)
+                            tokens_used = {
+                                "input_tokens": prompt_eval_count,
+                                "output_tokens": eval_count,
+                                "total_tokens": prompt_eval_count + eval_count,
+                            }
 
-                    return answer_text, False
-                else:
-                    logger.error(
-                        "claude_api_error_response",
-                        status_code=resp.status_code,
-                        response_body=resp.text,
-                    )
-                    return (
-                        "I'm here to help with your school portal! You can ask about your fees, "
-                        "attendance, homework assignments, study materials, or school calendar.",
-                        False,
-                    )
+                            logger.info(
+                                "llm_qwen_response_success",
+                                model=settings.llm_model,
+                                prompt_eval_count=prompt_eval_count,
+                                eval_count=eval_count,
+                                duration_ms=int(duration_ms),
+                            )
 
-        except Exception as exc:
-            logger.error("claude_api_call_exception", error=str(exc))
-            return (
-                "I'm here to help with your school portal! You can ask about your pending fees, "
-                "attendance percentage, homework, study materials, notices, or personal profile.",
-                False,
-            )
+                            # Cache response
+                            self._save_to_cache(cache_key, answer_text, tokens_used)
+
+                            # Log to MongoDB
+                            await claude_repo.log_response(
+                                institution_id=institution_id,
+                                user_id=user_id,
+                                role=role,
+                                question=question,
+                                answer=answer_text,
+                                model=settings.llm_model,
+                                tokens_used=tokens_used,
+                                duration_ms=duration_ms,
+                            )
+
+                            return answer_text, False
+                    else:
+                        logger.error(
+                            "llm_api_error_response",
+                            status_code=resp.status_code,
+                            response_body=resp.text,
+                        )
+            except Exception as exc:
+                logger.error("llm_api_call_exception", error=str(exc))
+
+        # ---------------------------------------------------------------------
+        # 2. Claude API Integration (Removed / Commented out as requested)
+        # ---------------------------------------------------------------------
+        # In favor of the RunPod Qwen3:14b Ollama API (/api/generate), direct Claude calls are disabled:
+        # api_key = getattr(settings, "claude_api_key", "")
+        # if api_key:
+        #     ... [Claude API Integration Removed] ...
+
+        # Default fallback if all remote services are unreachable
+        return (
+            "I'm here to help with your school portal! You can ask about your pending fees, "
+            "attendance percentage, homework, study materials, notices, or personal profile.",
+            False,
+        )
 
 
 claude_service = ClaudeService()

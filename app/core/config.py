@@ -79,21 +79,61 @@ class Settings(BaseSettings):
     )
 
     # -------------------------------------------------------------------------
-    # Claude AI (Fallback Only)
+    # LLM Fallback (RunPod Qwen3 / Ollama API)
     # -------------------------------------------------------------------------
 
-    claude_api_key: str = Field(
-        default="",
-        description="Anthropic API key. Empty string disables Claude fallback."
+    llm_api_url: str = Field(
+        default="https://4saq8btzluow12-11434.proxy.runpod.net/api/generate",
+        description="LLM endpoint URL for fallback generation",
+        validation_alias=AliasChoices("llm_api_url", "LLM_API_URL"),
     )
-    claude_model: str = Field(
-        default="claude-haiku-4-5-20251001",
-        description="Claude model identifier"
+    llm_model: str = Field(
+        default="qwen3:14b",
+        description="LLM model identifier",
+        validation_alias=AliasChoices("llm_model", "LLM_MODEL"),
     )
-    claude_max_tokens: int = Field(
-        default=500,
-        description="Maximum tokens in Claude's response"
+    llm_stream: bool = Field(
+        default=False,
+        description="Stream tokens (false for single JSON response)",
+        validation_alias=AliasChoices("llm_stream", "LLM_STREAM"),
     )
+    llm_think: bool = Field(
+        default=False,
+        description="Include thinking tokens in response",
+        validation_alias=AliasChoices("llm_think", "LLM_THINK"),
+    )
+    llm_num_predict: int = Field(
+        default=150,
+        description="Max tokens to predict / generate",
+        validation_alias=AliasChoices("llm_num_predict", "LLM_NUM_PREDICT"),
+    )
+    llm_temperature: float = Field(
+        default=0.2,
+        description="Sampling temperature",
+        validation_alias=AliasChoices("llm_temperature", "LLM_TEMPERATURE"),
+    )
+    direct_llm_fallback: bool = Field(
+        default=True,
+        description="When true, queries not matching ERP keywords directly hit LLM API and save to table",
+        validation_alias=AliasChoices("direct_llm_fallback", "DIRECT_LLM_FALLBACK"),
+    )
+
+    # -------------------------------------------------------------------------
+    # Claude AI (Removed / Commented out - replaced by RunPod Qwen LLM)
+    # -------------------------------------------------------------------------
+
+    # claude_api_key: str = Field(
+    #     default="",
+    #     description="Anthropic API key. Empty string disables Claude fallback."
+    # )
+    # claude_model: str = Field(
+    #     default="claude-haiku-4-5-20251001",
+    #     description="Claude model identifier"
+    # )
+    # claude_max_tokens: int = Field(
+    #     default=500,
+    #     description="Maximum tokens in Claude's response"
+    # )
 
     # -------------------------------------------------------------------------
     # ERP API Client
@@ -263,13 +303,9 @@ class Settings(BaseSettings):
     @property
     def claude_enabled(self) -> bool:
         """
-        Returns True only when a Claude API key is configured.
-
-        This allows us to develop and test the entire pipeline without
-        needing a paid Claude subscription. Claude fallback is simply
-        disabled when the key is not present.
+        Returns True when an LLM endpoint or Claude API key is configured.
         """
-        return bool(self.claude_api_key)
+        return bool(self.llm_api_url or self.claude_api_key)
 
     # -------------------------------------------------------------------------
     # Pydantic Configuration

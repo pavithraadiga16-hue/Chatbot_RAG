@@ -68,6 +68,15 @@ class ClaudeResponseRepository:
         try:
             res = await self.db.claude_responses.insert_one(doc)
             doc["_id"] = str(res.inserted_id)
+
+            # Also mirror into llm_responses collection
+            try:
+                mirror_doc = dict(doc)
+                mirror_doc.pop("_id", None)
+                await self.db.llm_responses.insert_one(mirror_doc)
+            except Exception:
+                pass
+
             logger.info(
                 "claude_response_logged",
                 institution_id=institution_id,

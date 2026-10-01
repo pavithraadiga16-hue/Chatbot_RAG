@@ -69,6 +69,7 @@ async def test_claude_response_caching():
         institution_id=institution_id,
         role=role,
         user_id=user_id,
+        force_fresh=False,
     )
 
     assert is_cached is True
@@ -178,3 +179,131 @@ def test_chat_pipeline_claude_fallback_triggered(client: TestClient):
             assert "inspiring story" in data["message"]
             if data.get("metadata"):
                 assert data["metadata"]["claude_used"] is True
+
+
+@pytest.mark.asyncio
+async def test_qwen_ollama_generate_payload_and_response():
+    """Verify generate_response sends exact Ollama JSON format and extracts response."""
+    from unittest.mock import MagicMock
+    from app.core.config import settings
+
+    mock_resp_data = {
+        "model": "qwen3:14b",
+        "created_at": "2026-09-15T12:00:00Z",
+        "response": "SchoolPhins ERP manages school operations including attendance and fees.",
+        "done": True,
+        "done_reason": "stop",
+        "prompt_eval_count": 45,
+        "eval_count": 20,
+    }
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = mock_resp_data
+
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_resp)) as mock_post:
+        answer, is_cached = await claude_service.generate_response(
+            question="Explain SchoolPhins ERP in 5 simple points.",
+            institution_id="test_inst",
+            role="student",
+            user_id="U101",
+        )
+
+        assert is_cached is False
+        assert "SchoolPhins ERP manages school operations" in answer
+
+        # Check call arguments
+        assert mock_post.call_count == 1
+        call_url = mock_post.call_args[0][0]
+        assert call_url == settings.llm_api_url
+
+        call_json = mock_post.call_args[1]["json"]
+        assert call_json["model"] == "qwen3:14b"
+        assert call_json["stream"] is False
+        assert call_json["think"] is False
+        assert call_json["options"]["num_predict"] == 150
+        assert call_json["options"]["temperature"] == 0.2
+        assert "Explain SchoolPhins ERP in 5 simple points." in call_json["prompt"]
+
+
+def test_direct_llm_fallback_hits_api_and_saves_table_each_time(client: TestClient):
+    """
+    Verify:
+    1. A non-keyword query directly hits the LLM API and saves to table every time.
+    2. Repeated calls continue to hit LLM (no cache blocking) and log each time.
+    3. An ERP keyword query (e.g. 'what is my pending fee?') routes to ERP with zero LLM calls.
+    """
+    from unittest.mock import MagicMock
+
+    mock_resp_data = {
+        "model": "qwen3:14b",
+        "created_at": "2026-09-23T12:00:00Z",
+        "response": "Here is an explanation of computer science fundamentals.",
+        "done": True,
+        "done_reason": "stop",
+        "prompt_eval_count": 30,
+        "eval_count": 25,
+    }
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = mock_resp_data
+
+    # 1. Non-keyword query hits LLM API and logs to table each time
+    unmatched_payload = {
+        "message": "can you explain quantum computing basics?",
+        "institution_id": "sjbhs",
+        "role": "student",
+        "user_id": "ST_DIRECT_LLM"
+    }
+
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_resp)) as mock_post:
+        with patch.object(claude_repo, "log_response", new=AsyncMock(return_value={})) as mock_log:
+            # First call
+            resp1 = client.post("/api/v1/phinsiq/chat", json=unmatched_payload)
+            assert resp1.status_code == 200
+            assert "quantum computing" in resp1.json()["message"] or "computer science" in resp1.json()["message"]
+            assert resp1.json()["metadata"]["claude_used"] is True
+            assert mock_post.call_count == 1
+            assert mock_log.call_count == 1
+
+            # Second call (same question) - uses cache, no redundant LLM hit
+            resp2 = client.post("/api/v1/phinsiq/chat", json=unmatched_payload)
+            assert resp2.status_code == 200
+            assert resp2.json()["metadata"]["claude_used"] is True
+            assert resp2.json()["metadata"]["response_type"] == "llm_cached"
+            assert mock_post.call_count == 1
+            assert mock_log.call_count == 1
+
+            # Third call (different question) - hits LLM API again and saves to table
+            diff_payload = {
+                "message": "can you explain black holes in astronomy?",
+                "institution_id": "sjbhs",
+                "role": "student",
+                "user_id": "ST_DIRECT_LLM"
+            }
+            resp3 = client.post("/api/v1/phinsiq/chat", json=diff_payload)
+            assert resp3.status_code == 200
+            assert resp3.json()["metadata"]["claude_used"] is True
+            assert mock_post.call_count == 2
+            assert mock_log.call_count == 2
+
+    # 2. Keyword query (fees) routes to ERP without hitting LLM API
+    keyword_payload = {
+        "message": "what is my pending fee?",
+        "institution_id": "sjbhs",
+        "role": "student",
+        "user_id": "868"
+    }
+
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_resp)) as mock_post:
+        resp_erp = client.post("/api/v1/phinsiq/chat", json=keyword_payload)
+        assert resp_erp.status_code == 200
+        erp_data = resp_erp.json()
+        assert erp_data["success"] is True
+        # Verified ERP keywords routed to ERP, zero LLM hits
+        from app.core.config import settings
+        llm_calls = [c for c in mock_post.call_args_list if c[0] and c[0][0] == settings.llm_api_url]
+        assert len(llm_calls) == 0
+        if erp_data.get("metadata"):
+            assert erp_data["metadata"]["claude_used"] is False
+

@@ -143,7 +143,7 @@ mpmath==1.3.0
 pint==0.24.4
 # Physical quantities and unit conversion library for math and science engines.
 
-numpy==2.2.3
+numpy>=2.2.3
 # Fundamental package for array computation and matrix operations.
 
 

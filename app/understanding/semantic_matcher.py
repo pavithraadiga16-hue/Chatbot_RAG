@@ -244,12 +244,29 @@ class SemanticMatcher:
                     similarity_score=100.0,
                 )
 
-            # 2. Token Set Ratio (handles out-of-order words & subsets)
-            score_token = fuzz.token_set_ratio(normalized, norm_pat)
-            # 3. Partial Ratio
-            score_partial = fuzz.partial_ratio(normalized, norm_pat)
-            # Take max weighted score
-            score = max(score_token, score_partial)
+            # Subject / academic questions guardrail for self-identity intents
+            words_norm = normalized.split()
+            words_pat = norm_pat.split()
+            if entry.get("intent") == "identity_profile":
+                academic_terms = {
+                    "math", "maths", "mathematics", "science", "physics", "chemistry", "biology",
+                    "history", "geography", "algebra", "geometry", "calculus", "question", "questions",
+                    "solve", "equation", "formula", "concept", "theorem", "syllabus", "subject", "study"
+                }
+                if any(term in words_norm for term in academic_terms):
+                    continue
+                self_terms = {"me", "myself", "my", "i"}
+                if not any(st in words_norm for st in self_terms):
+                    continue
+
+            # Length penalty ratio so a short 3-word pattern doesn't falsely match a long question
+            len_ratio = min(len(words_norm), len(words_pat)) / max(len(words_norm), len(words_pat)) if words_norm and words_pat else 1.0
+
+            score_sort = fuzz.token_sort_ratio(normalized, norm_pat)
+            score_ratio = fuzz.ratio(normalized, norm_pat)
+            score_token = fuzz.token_set_ratio(normalized, norm_pat) * (len_ratio ** 0.5)
+
+            score = max(score_sort, score_ratio, score_token)
 
             if score > best_score:
                 best_score = score
