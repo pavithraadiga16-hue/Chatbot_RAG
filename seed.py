@@ -129,11 +129,12 @@ async def seed_all(questions_only: bool = False, institution_filter: str = None)
     print(f"   Mode: {'Questions Only' if questions_only else 'Full System Seed'}")
     print("=" * 65)
 
-    client = AsyncIOMotorClient(
-        settings.mongodb_url,
-        serverSelectionTimeoutMS=10000,
-        tlsCAFile=certifi.where(),
-    )
+    mongo_options = {"serverSelectionTimeoutMS": 10000}
+    # Local MongoDB commonly runs without TLS. Atlas SRV URLs use TLS by
+    # default; pass certifi's CA bundle there (or when TLS is explicitly set).
+    if settings.mongodb_url.startswith("mongodb+srv://") or "tls=true" in settings.mongodb_url.lower():
+        mongo_options["tlsCAFile"] = certifi.where()
+    client = AsyncIOMotorClient(settings.mongodb_url, **mongo_options)
     db = client[settings.mongodb_database]
 
     try:

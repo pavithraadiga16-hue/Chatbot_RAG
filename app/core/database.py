@@ -80,24 +80,17 @@ async def connect_to_mongodb() -> None:
 
     logger.info("mongodb_connecting", url=settings.mongodb_url.split("@")[-1])
 
-    _client = AsyncIOMotorClient(
-        settings.mongodb_url,
-        # serverSelectionTimeoutMS: How long to wait before giving up on
-        # finding a MongoDB server to connect to.
-        serverSelectionTimeoutMS=settings.mongodb_timeout * 1000,
-        # connectTimeoutMS: How long to wait for a connection to be established.
-        connectTimeoutMS=settings.mongodb_timeout * 1000,
-        # socketTimeoutMS: How long to wait for a socket operation to complete.
-        socketTimeoutMS=settings.mongodb_timeout * 1000,
-        # tlsCAFile: Use certifi's trusted CA bundle for TLS verification.
-        # WHY THIS IS NEEDED ON macOS + Python 3.14:
-        #   macOS stores SSL certificates in its Keychain, not in the standard
-        #   OpenSSL certificate store. Python 3.14 (especially when installed
-        #   from python.org) does not automatically use Keychain certs.
-        #   certifi ships a curated bundle of trusted root CAs (same as browsers use).
-        #   This is the recommended fix for MongoDB Atlas SSL errors on macOS.
-        tlsCAFile=certifi.where(),
-    )
+    mongo_options = {
+        "serverSelectionTimeoutMS": settings.mongodb_timeout * 1000,
+        "connectTimeoutMS": settings.mongodb_timeout * 1000,
+        "socketTimeoutMS": settings.mongodb_timeout * 1000,
+    }
+    # Local MongoDB normally has TLS disabled. Atlas SRV URLs enable it by
+    # default; use certifi's CA bundle for SRV or explicitly TLS-enabled URLs.
+    if settings.mongodb_url.startswith("mongodb+srv://") or "tls=true" in settings.mongodb_url.lower():
+        mongo_options["tlsCAFile"] = certifi.where()
+
+    _client = AsyncIOMotorClient(settings.mongodb_url, **mongo_options)
 
     _database = _client[settings.mongodb_database]
 

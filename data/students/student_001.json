@@ -1,0 +1,13 @@
+{
+  "student_id": "STU001",
+  "name": "Ananya Sharma",
+  "department": "Computer Science and Engineering",
+  "semester": 5,
+  "cgpa": 8.72,
+  "attendance": 87,
+  "subjects": [
+    {"code": "CS501", "name": "Machine Learning", "attendance": 91},
+    {"code": "CS502", "name": "Computer Networks", "attendance": 82}
+  ],
+  "dummy_data": true
+}

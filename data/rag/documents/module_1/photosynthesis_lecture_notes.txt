@@ -1,0 +1,19 @@
+=== BIOLOGY MODULE 1: PLANT PHYSIOLOGY & PHOTOSYNTHESIS ===
+Lecturer: Dr. Anita Rao
+Department of Life Sciences
+
+What is Photosynthesis?
+Photosynthesis is the biochemical process through which green plants, algae, and certain bacteria convert sunlight, carbon dioxide (CO2), and water (H2O) into chemical energy in the form of glucose (C6H12O6), releasing oxygen (O2) as a byproduct.
+
+Chemical Equation:
+6 CO2 + 6 H2O + Light Energy -> C6H12O6 + 6 O2
+
+Key Stages of Photosynthesis:
+1. Light-Dependent Reactions: Occur within the thylakoid membranes of chloroplasts. Chlorophyll absorbs solar photons, splitting water molecules (photolysis) to generate ATP and NADPH while releasing oxygen.
+2. Light-Independent Reactions (Calvin Cycle): Occurs in the stroma of chloroplasts. ATP and NADPH are consumed to fix atmospheric carbon dioxide into glucose molecules through enzyme Rubisco.
+
+Factors Influencing Photosynthesis:
+- Light intensity and wavelength.
+- Carbon dioxide concentration.
+- Ambient temperature and enzyme kinetics.
+- Water availability in the soil.

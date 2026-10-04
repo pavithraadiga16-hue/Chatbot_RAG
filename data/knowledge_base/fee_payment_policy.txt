@@ -1,0 +1,9 @@
+NORTHSTAR INSTITUTE — FEE PAYMENT POLICY (DUMMY DEVELOPMENT SAMPLE)
+
+This fictional policy is sample content for PhinsIQ development and testing only. It is not an official policy and must be replaced with institution-approved text before use.
+
+Tuition and approved institutional fees are due by the dates shown on the student's official fee statement. Payments should be made through the institute's authorized payment portal or cashier. Students should keep the payment confirmation until the account ledger is updated.
+
+If a payment is not reflected after three working days, the student should contact the Finance Office with the transaction reference and a copy of the receipt. Never share a password, one-time passcode, or full card number when requesting payment support.
+
+An installment plan or late-payment exception must be requested from the Finance Office before the due date. Late charges, if any, are determined by the official fee schedule for the academic year.

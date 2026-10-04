@@ -7,7 +7,6 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
-from app.ai.claude_service import claude_service
 
 
 @pytest.fixture
@@ -108,38 +107,22 @@ def test_greeting_route_and_suggestions(client: TestClient):
     assert len(data["suggestion_questions"]) == 3
 
 
-def test_claude_fallback_route_and_suggestions(client: TestClient):
-    """Verify Claude fallback responses return routes array and 3 suggestions."""
-    from app.understanding.semantic_matcher import semantic_matcher, SemanticMatchResult
-    from app.understanding.module_detector import module_detector, ModuleDetectionResult
-
+def test_rag_route_and_suggestions(client: TestClient):
+    """Verify RAG responses return relevant routes array and 3 suggestions."""
     payload = {
         "institution_id": "sjbhs",
         "role": "student",
         "user_id": "9385",
-        "message": "can you share an inspiring study advice for me today?"
+        "message": "what is the minimum attendance requirement?"
     }
-    mock_ai_answer = (
-        "Your attendance is 83.6%. Your pending fee balance is ₹29,300. "
-        "Make sure to complete your homework and assignments regularly."
-    )
+    resp = client.post("/api/v1/phinsiq/chat", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
 
-    with patch.object(semantic_matcher, "match", return_value=SemanticMatchResult(matched=False)):
-        with patch.object(module_detector, "detect", return_value=ModuleDetectionResult(module="unknown", confidence=0.1, method="none", all_scores={})):
-            with patch.object(claude_service, "generate_response", new=AsyncMock(return_value=(mock_ai_answer, False))):
-                resp = client.post("/api/v1/phinsiq/chat", json=payload)
-                assert resp.status_code == 200
-                data = resp.json()
-
-                assert data["success"] is True
-                assert isinstance(data["routes"], list)
-                # Answer mentions attendance, fee, and homework -> all 3 routes returned
-                assert "/attendance" in data["routes"]
-                assert "/fees" in data["routes"]
-                assert "/homework" in data["routes"]
-                assert len(data["routes"]) >= 3
-                assert data["response"] == mock_ai_answer
-                assert len(data["suggestion_questions"]) == 3
+    assert data["success"] is True
+    assert isinstance(data["routes"], list)
+    assert "/attendance" in data["routes"]
+    assert len(data["suggestion_questions"]) == 3
 
 
 def test_multi_module_query_routes(client: TestClient):

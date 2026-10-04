@@ -115,7 +115,7 @@ class FieldDetector:
 
         # Check if user wants a complete summary
         if self._wants_full_summary(normalized):
-            logger.debug("field_detection_summary_requested", message_preview=normalized[:50])
+            logger.debug("field_detection_summary_requested")
             return FieldDetectionResult(
                 fields=[],
                 wants_summary=True,

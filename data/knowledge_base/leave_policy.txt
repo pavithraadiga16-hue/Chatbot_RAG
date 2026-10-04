@@ -1,0 +1,9 @@
+NORTHSTAR INSTITUTE — STUDENT LEAVE POLICY (DUMMY DEVELOPMENT SAMPLE)
+
+This fictional policy is sample content for PhinsIQ development and testing only. It is not an official policy and must be replaced with institution-approved text before use.
+
+Students should submit a leave request to their class adviser before planned absence. For illness or an emergency, the student or guardian should notify the institute as soon as possible and submit the leave form after returning.
+
+Medical leave requests longer than three consecutive class days should include a certificate from a registered medical practitioner. Leave approval does not automatically remove missed coursework or change subject attendance calculations.
+
+The adviser normally reviews complete requests within three working days. Students are responsible for arranging missed notes, assignments, and assessments with their instructors.

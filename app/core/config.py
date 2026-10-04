@@ -29,6 +29,7 @@ USAGE:
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, AliasChoices
+from typing import Literal
 from functools import lru_cache
 
 
@@ -79,61 +80,51 @@ class Settings(BaseSettings):
     )
 
     # -------------------------------------------------------------------------
-    # LLM Fallback (RunPod Qwen3 / Ollama API)
+    # Redis Caching
     # -------------------------------------------------------------------------
 
-    llm_api_url: str = Field(
-        default="https://4saq8btzluow12-11434.proxy.runpod.net/api/generate",
-        description="LLM endpoint URL for fallback generation",
-        validation_alias=AliasChoices("llm_api_url", "LLM_API_URL"),
-    )
-    llm_model: str = Field(
-        default="qwen3:14b",
-        description="LLM model identifier",
-        validation_alias=AliasChoices("llm_model", "LLM_MODEL"),
-    )
-    llm_stream: bool = Field(
-        default=False,
-        description="Stream tokens (false for single JSON response)",
-        validation_alias=AliasChoices("llm_stream", "LLM_STREAM"),
-    )
-    llm_think: bool = Field(
-        default=False,
-        description="Include thinking tokens in response",
-        validation_alias=AliasChoices("llm_think", "LLM_THINK"),
-    )
-    llm_num_predict: int = Field(
-        default=150,
-        description="Max tokens to predict / generate",
-        validation_alias=AliasChoices("llm_num_predict", "LLM_NUM_PREDICT"),
-    )
-    llm_temperature: float = Field(
-        default=0.2,
-        description="Sampling temperature",
-        validation_alias=AliasChoices("llm_temperature", "LLM_TEMPERATURE"),
-    )
-    direct_llm_fallback: bool = Field(
+    redis_enabled: bool = Field(
         default=True,
-        description="When true, queries not matching ERP keywords directly hit LLM API and save to table",
-        validation_alias=AliasChoices("direct_llm_fallback", "DIRECT_LLM_FALLBACK"),
+        description="Enable Redis caching for fast repeated query responses",
+        validation_alias=AliasChoices("redis_enabled", "REDIS_ENABLED"),
+    )
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis connection URL (e.g. redis://localhost:6379/0)",
+        validation_alias=AliasChoices("redis_url", "REDIS_URL"),
+    )
+    redis_ttl_general: int = Field(
+        default=3600,
+        description="Cache TTL in seconds for general/institutional RAG queries (1 hour)",
+        validation_alias=AliasChoices("redis_ttl_general", "REDIS_TTL_GENERAL"),
+    )
+    redis_ttl_student: int = Field(
+        default=300,
+        description="Cache TTL in seconds for student-specific ERP queries (5 minutes)",
+        validation_alias=AliasChoices("redis_ttl_student", "REDIS_TTL_STUDENT"),
     )
 
     # -------------------------------------------------------------------------
-    # Claude AI (Removed / Commented out - replaced by RunPod Qwen LLM)
+    # Institutional Document RAG
     # -------------------------------------------------------------------------
 
-    # claude_api_key: str = Field(
-    #     default="",
-    #     description="Anthropic API key. Empty string disables Claude fallback."
-    # )
-    # claude_model: str = Field(
-    #     default="claude-haiku-4-5-20251001",
-    #     description="Claude model identifier"
-    # )
-    # claude_max_tokens: int = Field(
-    #     default=500,
-    #     description="Maximum tokens in Claude's response"
-    # )
+    rag_enabled: bool = Field(
+        default=True,
+        description="Route institutional and academic document questions through local document retrieval",
+        validation_alias=AliasChoices("rag_enabled", "RAG_ENABLED"),
+    )
+    rag_top_k: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum knowledge chunks returned for a RAG query",
+        validation_alias=AliasChoices("rag_top_k", "RAG_TOP_K"),
+    )
+    rag_vector_db_path: str = Field(
+        default="data/rag/index/rag.sqlite3",
+        description="SQLite vector store path, relative to the project root",
+        validation_alias=AliasChoices("rag_vector_db_path", "RAG_VECTOR_DB_PATH"),
+    )
 
     # -------------------------------------------------------------------------
     # ERP API Client
@@ -231,8 +222,8 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
 
     enable_subject_engine: bool = Field(
-        default=False,
-        description="Toggle local Subject Engines (Mathematics, Science). Set to False to disable subject engine answers.",
+        default=True,
+        description="Toggle local Subject Engines (Mathematics, Science).",
         validation_alias=AliasChoices(
             "enable_subject_engine",
             "subject_engine_enabled",
@@ -241,7 +232,7 @@ class Settings(BaseSettings):
         ),
     )
     enable_math_engine: bool = Field(
-        default=False,
+        default=True,
         description="Toggle local Mathematics engine.",
         validation_alias=AliasChoices(
             "enable_math_engine",
@@ -251,7 +242,7 @@ class Settings(BaseSettings):
         ),
     )
     enable_science_engine: bool = Field(
-        default=False,
+        default=True,
         description="Toggle local Science engine (Physics, Chemistry, Biology).",
         validation_alias=AliasChoices(
             "enable_science_engine",
@@ -302,10 +293,20 @@ class Settings(BaseSettings):
 
     @property
     def claude_enabled(self) -> bool:
-        """
-        Returns True when an LLM endpoint or Claude API key is configured.
-        """
-        return bool(self.llm_api_url or self.claude_api_key)
+        """Cloud LLM fallback is permanently disabled in the 2-path architecture."""
+        return False
+
+    @property
+    def llm_model(self) -> str:
+        return ""
+
+    @property
+    def llm_api_url(self) -> str:
+        return ""
+
+    @property
+    def direct_llm_fallback(self) -> bool:
+        return False
 
     # -------------------------------------------------------------------------
     # Pydantic Configuration

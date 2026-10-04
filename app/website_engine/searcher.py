@@ -64,6 +64,7 @@ class WebsiteKnowledgeSearcher:
         q_raw = question.strip()
         q_clean = self._clean_query(q_raw)
         q_tokens = self._extract_query_tokens(q_clean)
+        q_match = " ".join(q_tokens) or q_clean
 
         scored_hits: list[WebsiteSearchHit] = []
 
@@ -83,16 +84,16 @@ class WebsiteKnowledgeSearcher:
                     continue
 
                 alias_tokens = self._extract_query_tokens(alias_clean)
-                has_token_overlap = (
-                    any(t in alias_clean for t in q_tokens if len(t) >= 3)
-                    or any(t in q_clean for t in alias_tokens if len(t) >= 3)
-                    or (not q_tokens and not alias_tokens)
-                )
+                alias_match = " ".join(alias_tokens) or alias_clean
+                has_token_overlap = bool(set(q_tokens) & set(alias_tokens))
 
-                ts_ratio = fuzz.token_set_ratio(q_clean, alias_clean) / 100.0
-                ratio = fuzz.ratio(q_clean, alias_clean) / 100.0
-                partial = fuzz.partial_ratio(q_clean, alias_clean) / 100.0
-                sort_ratio = fuzz.token_sort_ratio(q_clean, alias_clean) / 100.0
+                # Score content words instead of shared question scaffolding
+                # such as "what is"; otherwise unrelated short queries can
+                # look like a strong fuzzy match.
+                ts_ratio = fuzz.token_set_ratio(q_match, alias_match) / 100.0
+                ratio = fuzz.ratio(q_match, alias_match) / 100.0
+                partial = fuzz.partial_ratio(q_match, alias_match) / 100.0
+                sort_ratio = fuzz.token_sort_ratio(q_match, alias_match) / 100.0
 
                 # If no token overlap at all and basic ratio is low, avoid false match
                 if not has_token_overlap and ratio < 0.60:
@@ -106,7 +107,7 @@ class WebsiteKnowledgeSearcher:
                 )
 
                 # Substring containment bonus (e.g. "principal" in "who is principal of sjbhs")
-                if alias_clean in q_clean or q_clean in alias_clean:
+                if alias_match in q_match or q_match in alias_match:
                     score = min(1.0, score + 0.15)
 
                 if score > best_alias_score:
@@ -116,20 +117,20 @@ class WebsiteKnowledgeSearcher:
             # Check canonical question
             q_canonical_clean = self._clean_query(item.question)
             canonical_tokens = self._extract_query_tokens(q_canonical_clean)
-            has_canonical_overlap = (
-                any(t in q_canonical_clean for t in q_tokens if len(t) >= 3)
-                or any(t in q_clean for t in canonical_tokens if len(t) >= 3)
-            )
+            has_canonical_overlap = bool(set(q_tokens) & set(canonical_tokens))
 
             canonical_score = 0.0
             if has_canonical_overlap:
-                canonical_score = fuzz.token_set_ratio(q_clean, q_canonical_clean) / 100.0
+                canonical_score = fuzz.token_set_ratio(
+                    q_match, " ".join(canonical_tokens) or q_canonical_clean
+                ) / 100.0
 
             # Composite Q&A score
             final_qa_score = max(best_alias_score, canonical_score * 0.90)
 
             # Keyword containment bonus on field_key
-            if item.field_key.lower() in q_clean or any(t in item.field_key.lower() for t in q_tokens if len(t) >= 4):
+            field_tokens = set(self._extract_query_tokens(item.field_key))
+            if item.field_key.lower() in q_match or bool(set(q_tokens) & field_tokens):
                 final_qa_score = min(1.0, final_qa_score + 0.12)
 
             if final_qa_score >= min_score_threshold:

@@ -1,0 +1,13 @@
+{
+  "student_id": "STU002",
+  "name": "Rohan Iyer",
+  "department": "Electrical Engineering",
+  "semester": 3,
+  "cgpa": 7.94,
+  "attendance": 78,
+  "subjects": [
+    {"code": "EE301", "name": "Circuit Analysis", "attendance": 81},
+    {"code": "EE302", "name": "Signals and Systems", "attendance": 75}
+  ],
+  "dummy_data": true
+}

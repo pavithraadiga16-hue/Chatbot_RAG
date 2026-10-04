@@ -2,8 +2,7 @@ venv/
 __pycache__/
 *.pyc
 .env
-venv/
-__pycache__/
-*.pyc
 .DS_Store
-.env
+.pytest_cache/
+.freebuff/
+data/vector_db/

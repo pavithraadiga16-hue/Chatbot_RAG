@@ -88,7 +88,7 @@ class ChatRequest(BaseModel):
 
     claude: bool = Field(
         default=True,
-        description="Toggle Claude AI fallback (True=Enabled, False=FastAPI only)",
+        description="Legacy client field; normal general fallback always uses configured local Qwen",
         examples=[True],
     )
 
@@ -137,7 +137,17 @@ class ChatMetadata(BaseModel):
 
     claude_used: bool = Field(
         default=False,
-        description="Whether Claude AI was used to answer this question",
+        description="Legacy compatibility flag; false for the local Qwen provider",
+    )
+
+    llm_provider: Optional[str] = Field(
+        default=None,
+        description="Inference provider used for this response, such as local Ollama",
+    )
+
+    llm_model: Optional[str] = Field(
+        default=None,
+        description="Local model identifier used for this response",
     )
 
     detected_module: Optional[str] = Field(
@@ -159,7 +169,7 @@ class ChatMetadata(BaseModel):
         default=None,
         description=(
             "How the response was generated: "
-            "'greeting', 'template', 'claude', 'fallback'"
+            "'greeting', 'template', 'rag', 'local_llm', 'fallback'"
         ),
     )
 
@@ -214,6 +224,11 @@ class ChatResponse(BaseModel):
         description="3 contextual follow-up question suggestions",
     )
 
+    sources: Optional[list[str]] = Field(
+        default=None,
+        description="Source document names when the response came from institutional knowledge",
+    )
+
     metadata: Optional[ChatMetadata] = Field(
         default=None,
         description="Processing metadata. May be null in production.",
@@ -232,6 +247,7 @@ class ChatResponse(BaseModel):
         route: str = "",
         suggestion_questions: Optional[list[str]] = None,
         metadata: Optional[ChatMetadata] = None,
+        sources: Optional[list[str]] = None,
     ) -> "ChatResponse":
         """
         Factory method for successful responses with routes array and suggestion questions.
@@ -246,6 +262,7 @@ class ChatResponse(BaseModel):
             routes=routes_list,
             suggestion_questions=suggestion_questions or [],
             metadata=metadata,
+            sources=sources,
         )
 
     @classmethod

@@ -1,0 +1,19 @@
+=== MODULE 3: DATABASE MANAGEMENT SYSTEMS & DATA ARCHITECTURE ===
+Lecturer: Prof. Sarah Jenkins
+Department of Computer Science & Engineering
+
+Module 3 Overview:
+Module 3 covers relational database architecture, normal forms, SQL querying, transaction management, and indexing strategies.
+
+Key Concepts in Module 3:
+1. Relational Model: Data is organized into tables (relations) of rows (tuples) and columns (attributes).
+2. Database Normalization: The process of structuring tables to eliminate data redundancy and prevent insert, update, and delete anomalies.
+   - First Normal Form (1NF): Eliminates repeating groups and ensures atomic values.
+   - Second Normal Form (2NF): Eliminates partial functional dependencies.
+   - Third Normal Form (3NF): Eliminates transitive dependencies.
+3. ACID Properties: Transactions must guarantee Atomicity, Consistency, Isolation, and Durability.
+4. Indexing: B-Tree and Hash indexes are utilized to improve search query execution speeds.
+5. SQL Joins: Inner joins, outer joins, and cross joins allow combining records across multiple relations.
+
+Examination Focus for Module 3:
+Students should be prepared to normalize a given relation up to 3NF and write SQL queries with subqueries and aggregations.

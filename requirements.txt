@@ -14,6 +14,7 @@
 # --- Web Framework -----------------------------------------------------------
 
 fastapi==0.141.1
+colorama>=0.4.6; platform_system == "Windows"
 # High-performance async Python web framework.
 # Handles routing, request validation, serialization, and auto-generates API docs.
 # Why FastAPI over Flask: Async-first, automatic Pydantic validation, 3x faster.
@@ -50,6 +51,9 @@ pydantic-core==2.46.4
 motor==3.7.1
 # Async MongoDB driver for Python. The name "motor" = "async pymongo".
 # We use this to query MongoDB without blocking the event loop while waiting.
+
+certifi>=2024.2.2
+# CA bundle used for TLS connections to hosted MongoDB deployments.
 
 pymongo==4.17.0
 # Synchronous MongoDB driver that Motor builds on top of.
@@ -110,7 +114,7 @@ slowapi==0.1.10
 
 # --- NLP & Semantic Matching -------------------------------------------------
 
-rapidfuzz==3.12.2
+rapidfuzz>=3.12.0
 # High-performance fuzzy matching and token similarity engine (C++ core).
 # Used for instant intent matching on user questions without hitting Claude.
 
@@ -169,8 +173,15 @@ playwright==1.62.0
 soundfile>=0.12.1
 # Audio file read/write library for 16-bit PCM WAV generation.
 
-melotts>=0.1.2
-# High-speed offline speech synthesis model (MIT licensed, CPU-only).
+# melotts>=0.1.1
+# Optional: High-speed offline speech synthesis model (requires PyTorch, install separately).
+
+redis>=5.0.0
+# Async Redis client for response caching with student-isolated cache keys.
+
+pypdf>=4.0.0
+# PDF text extraction library for institutional document and lecture notes ingestion.
+
 
 
 

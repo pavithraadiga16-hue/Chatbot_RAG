@@ -73,8 +73,7 @@ async def chat(
         request_id=request_id,
         institution_id=request.institution_id,
         role=request.role,
-        user_id=request.user_id,
-        message_preview=request.message[:60],
+        message_length=len(request.message),
     )
 
     # Delegate to the pipeline — this is the ONLY call this handler makes
@@ -85,6 +84,8 @@ async def chat(
         request_id=request_id,
         success=response.success,
         claude_used=response.metadata.claude_used if response.metadata else False,
+        llm_provider=response.metadata.llm_provider if response.metadata else None,
+        llm_model=response.metadata.llm_model if response.metadata else None,
         response_type=response.metadata.response_type if response.metadata else "unknown",
     )
 

@@ -91,7 +91,9 @@ MODULE_KEYWORDS: dict[str, list[tuple[str, float]]] = {
         ("attendance", 2.0),
         ("attend", 2.0),
         ("present", 1.5),
-        ("absent", 1.5),
+        # A standalone absence question must qualify beside a stronger
+        # module signal such as fees.
+        ("absent", 2.0),
         ("bunk", 2.0),
         ("bunked", 2.0),
         ("percentage", 1.0),  # lower weight — also used in other modules
@@ -105,6 +107,10 @@ MODULE_KEYWORDS: dict[str, list[tuple[str, float]]] = {
         ("test", 1.5),
         ("result", 1.5),
         ("marks", 2.0),
+        ("cgpa", 2.0),
+        ("gpa", 1.5),
+        ("sgpa", 1.5),
+        ("grade point", 1.5),
         ("grade", 1.5),
         ("score", 1.5),
         ("assessment", 1.5),
@@ -450,6 +456,23 @@ class ModuleDetector:
     # and should consider Claude fallback
     CONFIDENCE_THRESHOLD = 0.40
 
+    def classify_multiple(self, message: str) -> list[str]:
+        """Return all modules supported by strong keyword evidence.
+
+        This uses the existing module map rather than splitting on "and".
+        Secondary intents need at least 1.5 points and half the leading
+        module's score to avoid weak incidental matches.
+        """
+        result = self.detect(message)
+        if not result.module:
+            return []
+        scores = result.all_scores
+        best_score = scores.get(result.module, 0.0)
+        return [
+            module for module, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            if module == result.module or (score >= 1.5 and score >= best_score * 0.5)
+        ]
+
     def detect(self, message: str) -> ModuleDetectionResult:
         """
         Detect the module(s) from a natural language message.
@@ -474,7 +497,7 @@ class ModuleDetector:
         if not any(ex in normalized for ex in ("academic id", "academic calendar", "academic year", "academic session", "academic term")):
             for pat in OVERALL_OVERVIEW_PATTERNS:
                 if re.search(pat, normalized):
-                    logger.debug("module_detected_academic_overview", message_preview=normalized[:50])
+                    logger.debug("module_detected_academic_overview")
                     return ModuleDetectionResult(
                         module="academic_overview",
                         confidence=1.0,
@@ -514,7 +537,7 @@ class ModuleDetector:
                     is_overall_overview=semantic_res.is_overall_overview,
                 )
 
-            logger.debug("module_detection_no_match", message_preview=normalized[:50])
+            logger.debug("module_detection_no_match")
             return ModuleDetectionResult(
                 module=None,
                 confidence=0.0,
@@ -528,10 +551,7 @@ class ModuleDetector:
         best_score = scores[best_module]
 
         # Gather all qualifying modules (for cross-module questions e.g. fees + attendance)
-        qualifying_modules = [best_module]
-        for m, s in sorted(scores.items(), key=lambda x: x[1], reverse=True):
-            if m != best_module and s >= 2.0 and s >= (best_score * 0.5):
-                qualifying_modules.append(m)
+        qualifying_modules = self.classify_multiple_from_scores(best_module, scores)
 
         # Normalize confidence to 0.0–1.0
         confidence = min(best_score / 4.0, 1.0)
@@ -576,6 +596,15 @@ class ModuleDetector:
             all_scores=scores,
             modules=qualifying_modules,
         )
+
+    @staticmethod
+    def classify_multiple_from_scores(best_module: str, scores: dict[str, float]) -> list[str]:
+        """Select the primary and qualifying secondary modules from one score pass."""
+        best_score = scores[best_module]
+        return [
+            module for module, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            if module == best_module or (score >= 1.5 and score >= best_score * 0.5)
+        ]
 
     def wants_summary(self, message: str) -> bool:
         """

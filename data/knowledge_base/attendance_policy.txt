@@ -1,0 +1,9 @@
+NORTHSTAR INSTITUTE — ATTENDANCE POLICY (DUMMY DEVELOPMENT SAMPLE)
+
+This fictional policy is sample content for PhinsIQ development and testing only. It is not an official policy and must be replaced with institution-approved text before use.
+
+Students are expected to maintain at least 75% attendance in each subject to be eligible to appear for end-semester examinations. Attendance is calculated subject-wise from the classes scheduled for that subject.
+
+Students whose attendance is between 65% and 74% may apply for condonation when there are documented exceptional circumstances. Condonation is reviewed by the academic office and is not automatic. Students below 65% are normally not eligible to sit the examination unless an exception is approved under the institution's rules.
+
+Students should report attendance record errors to the course instructor within five working days of the relevant class. Medical or other supporting documents may be requested for an attendance appeal.

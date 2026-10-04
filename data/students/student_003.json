@@ -1,0 +1,13 @@
+{
+  "student_id": "STU003",
+  "name": "Meera Nair",
+  "department": "Civil Engineering",
+  "semester": 7,
+  "cgpa": 8.31,
+  "attendance": 92,
+  "subjects": [
+    {"code": "CE701", "name": "Structural Design", "attendance": 94},
+    {"code": "CE702", "name": "Transportation Engineering", "attendance": 90}
+  ],
+  "dummy_data": true
+}
